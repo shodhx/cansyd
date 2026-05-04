@@ -1,11 +1,11 @@
-# Data & Core Math
-pandas==2.2.0
-numpy==1.26.4
-scikit-learn==1.4.0
-
-# Neuro Layer (NLP)
-transformers==4.38.2
-
-# Symbolic & Causal Layers
-networkx==3.2.1
-dowhy==0.11.1
+tensorflow==2.15.0
+keras==2.15.0
+dowhy
+causalml
+scipy
+pandas
+numpy
+scikit-learn
+wfdb
+pyyaml
+matplotlib
