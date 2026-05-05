@@ -32,7 +32,7 @@ All notable changes to this project will be documented in this file.
 
 \- Added cross-domain validation using the MIT-BIH Arrhythmia dataset from PhysioNet.
 
-
+- Archived experimental iterations and deprecated notebooks will continue to be maintained in the `CNSD_prototype` repository for historical reference.
 
 
 
