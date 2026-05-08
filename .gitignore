@@ -1,17 +1,7 @@
-# Python
 __pycache__/
-*.py[cod]
-*$py.class
-venv/
-.venv/
-env/
-
-# IDEs
-.vscode/
-.idea/
-
-# Data & Large Files
-*.log
-*.csv
-*.json
-!data/  
+*.pyc
+*.mat
+cwru/
+mitdb/
+*.h5
+*.weights.h5
