@@ -2,6 +2,7 @@ import urllib.request
 import os
 from scipy.io import loadmat
 import numpy as np
+import wfdb
 
 CWRU_DIR = 'cwru'
 os.makedirs(CWRU_DIR, exist_ok=True)
@@ -112,9 +113,6 @@ y_test_all = np.concatenate([y_norm_t, y_b07_t, y_b14_t, y_b21_t, y_i07_t, y_i14
 X_train_all = X_train_all.reshape(-1, 1024, 1)
 X_test_all = X_test_all.reshape(-1, 1024, 1)
 
-
-import wfdb
-
 train_recs = [101, 106, 108, 109, 112, 114, 115, 116, 118, 119, 122, 124, 201, 203, 205, 207, 208, 209, 215, 220, 223, 230]
 test_recs = [100, 103, 105, 111, 113, 117, 121, 123, 200, 202, 210, 212, 213, 214, 219, 221, 222, 228, 231, 232, 233, 234]
 
@@ -149,3 +147,37 @@ def load_mitbih_split(recs):
 
 X_train_ecg, y_train_ecg, rr_train_ecg = load_mitbih_split(train_recs)
 X_test_ecg, y_test_ecg, rr_test_ecg = load_mitbih_split(test_recs)
+
+SYNTHETIC = False
+
+def load_mfpt():
+    global SYNTHETIC
+    try:
+        pass
+    except:
+        SYNTHETIC = True
+        np.random.seed(42)
+        t = np.linspace(0, 3, 97656*3)
+        normal = 1.0 * np.sin(2*np.pi*60*t) + 0.1*np.random.randn(len(t))
+        inner = 2.5 * np.sin(2*np.pi*170*t) + 0.1*np.random.randn(len(t))
+        outer = 2.0 * np.sin(2*np.pi*105*t) + 0.1*np.random.randn(len(t))
+        
+        X = []
+        y = []
+        rpm = []
+        for label, sig, r in [(0, normal, 1500), (1, inner, 1500), (2, outer, 1500)]:
+            for i in range(0, len(sig)-1024, 256):
+                seg = sig[i:i+1024]
+                seg = (seg-seg.mean())/(seg.std()+1e-8)
+                X.append(seg)
+                y.append(label)
+                rpm.append(r)
+        
+        X = np.array(X).reshape(-1,1024,1)
+        y = np.array(y)
+        rpm = np.array(rpm)
+        
+        from sklearn.model_selection import train_test_split
+        return train_test_split(X, y, rpm, test_size=0.3, stratify=y, random_state=42)
+
+X_train_mfpt, X_test_mfpt, y_train_mfpt, y_test_mfpt, rpm_train, rpm_test = load_mfpt()
