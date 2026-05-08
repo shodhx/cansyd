@@ -3,6 +3,7 @@ import os
 from scipy.io import loadmat
 import numpy as np
 import wfdb
+import pandas as pd
 
 CWRU_DIR = 'cwru'
 os.makedirs(CWRU_DIR, exist_ok=True)
@@ -181,3 +182,24 @@ def load_mfpt():
         return train_test_split(X, y, rpm, test_size=0.3, stratify=y, random_state=42)
 
 X_train_mfpt, X_test_mfpt, y_train_mfpt, y_test_mfpt, rpm_train, rpm_test = load_mfpt()
+
+def load_cmapss():
+    url = 'https://ti.arc.nasa.gov/c/6/'
+    df_train = pd.read_csv('train_FD001.txt', sep=' ', header=None)
+    df_train.drop(df_train.columns[[26, 27]], axis=1, inplace=True)
+    df_train.columns = ['unit', 'cycle', 'op1', 'op2', 'op3'] + [f's{i}' for i in range(1, 22)]
+    
+    max_cycle = df_train.groupby('unit')['cycle'].max().reset_index()
+    max_cycle.columns = ['unit', 'max_cycle']
+    df_train = df_train.merge(max_cycle, on='unit')
+    df_train['rul'] = df_train['max_cycle'] - df_train['cycle']
+    df_train['fault'] = (df_train['rul'] < 125).astype(int)
+    
+    X = df_train[[f's{i}' for i in range(2, 22)]].values
+    y = df_train['fault'].values
+    op = df_train[['op1', 'op2', 'op3']].values
+    
+    from sklearn.model_selection import train_test_split
+    return train_test_split(X, y, op, test_size=0.3, random_state=42)
+
+X_train_cm, X_test_cm, y_train_cm, y_test_cm, op_train, op_test = load_cmapss()
