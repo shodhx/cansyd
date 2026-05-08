@@ -27,3 +27,68 @@ def build_cnn(input_shape, num_classes):
 
 model = build_cnn((1024, 1), 10)
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
+def patchify(X, num_patches=8):
+    batch_size = tf.shape(X)[0]
+    seq_len = tf.shape(X)[1]
+    patch_size = seq_len // num_patches
+    patches = tf.reshape(X, [batch_size, num_patches, patch_size, 1])
+    return patches
+
+def build_jepa_encoder(patch_dim, encoder_dim):
+    inp = layers.Input((patch_dim, 1))
+    x = layers.Conv1D(64, 3, padding='same')(inp)
+    x = layers.BatchNormalization()(x)
+    x = layers.Activation('relu')(x)
+    x = layers.GlobalAveragePooling1D()(x)
+    x = layers.Dense(encoder_dim)(x)
+    return tf.keras.Model(inp, x)
+
+encoder = build_jepa_encoder(128, 256)
+target_encoder = build_jepa_encoder(128, 256)
+
+for w1, w2 in zip(encoder.weights, target_encoder.weights):
+    w2.assign(w1)
+
+def vicreg_loss(z1, z2, lam=25.0, mu=25.0, nu=1.0):
+    inv = tf.reduce_mean(tf.square(z1 - z2))
+    z1_norm = (z1 - tf.reduce_mean(z1, axis=0)) / (tf.math.reduce_std(z1, axis=0) + 1e-8)
+    z2_norm = (z2 - tf.reduce_mean(z2, axis=0)) / (tf.math.reduce_std(z2, axis=0) + 1e-8)
+    std1 = tf.sqrt(tf.nn.relu(1.0 - tf.math.reduce_std(z1_norm, axis=0)) + 1e-8)
+    std2 = tf.sqrt(tf.nn.relu(1.0 - tf.math.reduce_std(z2_norm, axis=0)) + 1e-8)
+    var = tf.reduce_mean(std1) + tf.reduce_mean(std2)
+    cov1 = tf.matmul(tf.transpose(z1_norm), z1_norm) / tf.cast(tf.shape(z1)[0], tf.float32)
+    cov2 = tf.matmul(tf.transpose(z2_norm), z2_norm) / tf.cast(tf.shape(z2)[0], tf.float32)
+    off_diag1 = cov1 - tf.linalg.diag(tf.linalg.diag_part(cov1))
+    off_diag2 = cov2 - tf.linalg.diag(tf.linalg.diag_part(cov2))
+    cov = tf.reduce_sum(tf.square(off_diag1)) + tf.reduce_sum(tf.square(off_diag2))
+    return lam * inv + mu * var + nu * cov
+
+for epoch in range(15):
+    for i in range(0, len(X_train_all), 64):
+        batch = X_train_all[i:i+64]
+        p = patchify(batch)
+        with tf.GradientTape() as tape:
+            z1 = encoder(p[:, 0], training=True)
+            z2 = target_encoder(p[:, 1], training=False)
+            loss = vicreg_loss(z1, z2)
+        grads = tape.gradient(loss, encoder.trainable_weights)
+        tf.keras.optimizers.Adam(0.001).apply_gradients(zip(grads, encoder.trainable_weights))
+        for w1, w2 in zip(encoder.weights, target_encoder.weights):
+            w2.assign(0.99 * w2 + 0.01 * w1)
+
+jepa_embeddings = []
+for i in range(0, len(X_train_all), 64):
+    batch = X_train_all[i:i+64]
+    p = patchify(batch)
+    e = [encoder(p[:, j], training=False) for j in range(8)]
+    jepa_embeddings.append(tf.reduce_mean(tf.stack(e, axis=1), axis=1).numpy())
+jepa_embeddings = np.concatenate(jepa_embeddings)
+
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+
+scaler = StandardScaler()
+jepa_tr = scaler.fit_transform(jepa_embeddings)
+probe = LogisticRegression(max_iter=1000)
+probe.fit(jepa_tr, y_train_all)
