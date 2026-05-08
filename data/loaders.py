@@ -1,42 +1,113 @@
+import urllib.request
 import os
+from scipy.io import loadmat
 import numpy as np
-import pandas as pd
-import scipy.io as sio
-from sklearn.preprocessing import StandardScaler
 
-class SignalLoader:
-    def __init__(self, config):
-        self.cfg = config
-        self.win = config['params']['window']
-        self.stride = config['params']['stride']
+CWRU_DIR = 'cwru'
+os.makedirs(CWRU_DIR, exist_ok=True)
 
-    def fetch_cwru(self, file_path):
-        """Extracts DE vibration; handles varying .mat keys."""
-        res = sio.loadmat(file_path)
-        # Regex-style lookup for the DE_time signal
-        key = [k for k in res.keys() if 'DE_time' in k][0]
-        sig = res[key].flatten()
-        return self._slice(sig)
+files = {
+    'Normal_0': 'https://engineering.case.edu/sites/default/files/97.mat',
+    'Normal_1': 'https://engineering.case.edu/sites/default/files/98.mat',
+    'Normal_2': 'https://engineering.case.edu/sites/default/files/99.mat',
+    'Normal_3': 'https://engineering.case.edu/sites/default/files/100.mat',
+    'Ball_007_0': 'https://engineering.case.edu/sites/default/files/118.mat',
+    'Ball_007_1': 'https://engineering.case.edu/sites/default/files/119.mat',
+    'Ball_007_2': 'https://engineering.case.edu/sites/default/files/120.mat',
+    'Ball_007_3': 'https://engineering.case.edu/sites/default/files/121.mat',
+    'Ball_014_0': 'https://engineering.case.edu/sites/default/files/185.mat',
+    'Ball_014_1': 'https://engineering.case.edu/sites/default/files/186.mat',
+    'Ball_014_2': 'https://engineering.case.edu/sites/default/files/187.mat',
+    'Ball_014_3': 'https://engineering.case.edu/sites/default/files/188.mat',
+    'Ball_021_0': 'https://engineering.case.edu/sites/default/files/222.mat',
+    'Ball_021_1': 'https://engineering.case.edu/sites/default/files/223.mat',
+    'Ball_021_2': 'https://engineering.case.edu/sites/default/files/224.mat',
+    'Ball_021_3': 'https://engineering.case.edu/sites/default/files/225.mat',
+    'IR_007_0': 'https://engineering.case.edu/sites/default/files/105.mat',
+    'IR_007_1': 'https://engineering.case.edu/sites/default/files/106.mat',
+    'IR_007_2': 'https://engineering.case.edu/sites/default/files/107.mat',
+    'IR_007_3': 'https://engineering.case.edu/sites/default/files/108.mat',
+    'IR_014_0': 'https://engineering.case.edu/sites/default/files/169.mat',
+    'IR_014_1': 'https://engineering.case.edu/sites/default/files/170.mat',
+    'IR_014_2': 'https://engineering.case.edu/sites/default/files/171.mat',
+    'IR_014_3': 'https://engineering.case.edu/sites/default/files/172.mat',
+    'IR_021_0': 'https://engineering.case.edu/sites/default/files/209.mat',
+    'IR_021_1': 'https://engineering.case.edu/sites/default/files/210.mat',
+    'IR_021_2': 'https://engineering.case.edu/sites/default/files/211.mat',
+    'IR_021_3': 'https://engineering.case.edu/sites/default/files/212.mat',
+    'OR_007_3': 'https://engineering.case.edu/sites/default/files/130.mat',
+    'OR_007_6': 'https://engineering.case.edu/sites/default/files/131.mat',
+    'OR_007_12': 'https://engineering.case.edu/sites/default/files/132.mat',
+    'OR_014_6': 'https://engineering.case.edu/sites/default/files/197.mat',
+    'OR_021_6': 'https://engineering.case.edu/sites/default/files/234.mat',
+    'OR_007_0': 'https://engineering.case.edu/sites/default/files/144.mat',
+    'OR_014_0': 'https://engineering.case.edu/sites/default/files/189.mat',
+    'OR_021_0': 'https://engineering.case.edu/sites/default/files/226.mat',
+    'OR_007_1': 'https://engineering.case.edu/sites/default/files/145.mat',
+    'OR_014_1': 'https://engineering.case.edu/sites/default/files/190.mat',
+    'OR_021_1': 'https://engineering.case.edu/sites/default/files/227.mat',
+    'OR_007_2': 'https://engineering.case.edu/sites/default/files/146.mat',
+    'OR_014_2': 'https://engineering.case.edu/sites/default/files/191.mat',
+    'OR_021_2': 'https://engineering.case.edu/sites/default/files/228.mat',
+}
 
-    def fetch_cmapss(self, file_path):
-        """Loads NASA telemetry and drops zero-variance sensors."""
-        cols = ['id', 'cycle', 'os1', 'os2', 'os3'] + [f's_{i}' for i in range(1, 22)]
-        df = pd.read_csv(file_path, sep='\s+', header=None, names=cols)
-        
-        # Standard cleaning for diagnostic research
-        drop_list = ['os3', 's_1', 's_5', 's_6', 's_10', 's_16', 's_18', 's_19']
-        df.drop(columns=drop_list, inplace=True)
-        return df
+for name, url in files.items():
+    path = f'{CWRU_DIR}/{name}.mat'
+    if not os.path.exists(path):
+        try:
+            urllib.request.urlretrieve(url, path)
+        except:
+            pass
 
-    def _slice(self, sig):
-        """Fast sliding window using list comprehension."""
-        count = (len(sig) - self.win) // self.stride
-        windows = [sig[i*self.stride : i*self.stride + self.win] for i in range(count)]
-        return np.array(windows).reshape(-1, self.win, 1)
+def load_cwru_class(pattern, label, loads=[0,1,2,3], seg_len=1024, step=256):
+    X = []
+    y = []
+    for load in loads:
+        fpath = f'{CWRU_DIR}/{pattern}_{load}.mat'
+        if not os.path.exists(fpath):
+            continue
+        try:
+            mat = loadmat(fpath)
+            key = [k for k in mat if 'DE_time' in k or 'BA_time' in k or 'FE_time' in k]
+            if not key:
+                key = [k for k in mat if not k.startswith('_')]
+            signal = mat[key[0]].flatten()
+            for i in range(0, len(signal)-seg_len+1, step):
+                seg = signal[i:i+seg_len]
+                seg = (seg - seg.mean()) / (seg.std() + 1e-8)
+                X.append(seg)
+                y.append(label)
+        except:
+            continue
+    return np.array(X), np.array(y)
 
-    def get_cwru_batch(self):
-        """Aggregates all .mat files in the CWRU directory."""
-        path = self.cfg['paths']['cwru']
-        files = [os.path.join(path, f) for f in os.listdir(path) if f.endswith('.mat')]
-        data = np.vstack([self.fetch_cwru(f) for f in files])
-        return data
+X_norm, y_norm = load_cwru_class('Normal', 0)
+X_b07, y_b07 = load_cwru_class('Ball_007', 1)
+X_b14, y_b14 = load_cwru_class('Ball_014', 2)
+X_b21, y_b21 = load_cwru_class('Ball_021', 3)
+X_i07, y_i07 = load_cwru_class('IR_007', 4)
+X_i14, y_i14 = load_cwru_class('IR_014', 5)
+X_i21, y_i21 = load_cwru_class('IR_021', 6)
+X_o07, y_o07 = load_cwru_class('OR_007', 7)
+X_o14, y_o14 = load_cwru_class('OR_014', 8)
+X_o21, y_o21 = load_cwru_class('OR_021', 9)
+
+X_train_all = np.concatenate([X_norm, X_b07, X_b14, X_b21, X_i07, X_i14, X_i21, X_o07, X_o14, X_o21])
+y_train_all = np.concatenate([y_norm, y_b07, y_b14, y_b21, y_i07, y_i14, y_i21, y_o07, y_o14, y_o21])
+
+X_norm_t, y_norm_t = load_cwru_class('Normal', 0, [3])
+X_b07_t, y_b07_t = load_cwru_class('Ball_007', 1, [3])
+X_b14_t, y_b14_t = load_cwru_class('Ball_014', 2, [3])
+X_b21_t, y_b21_t = load_cwru_class('Ball_021', 3, [3])
+X_i07_t, y_i07_t = load_cwru_class('IR_007', 4, [3])
+X_i14_t, y_i14_t = load_cwru_class('IR_014', 5, [3])
+X_i21_t, y_i21_t = load_cwru_class('IR_021', 6, [3])
+X_o07_t, y_o07_t = load_cwru_class('OR_007', 7, [3])
+X_o14_t, y_o14_t = load_cwru_class('OR_014', 8, [3])
+X_o21_t, y_o21_t = load_cwru_class('OR_021', 9, [3])
+
+X_test_all = np.concatenate([X_norm_t, X_b07_t, X_b14_t, X_b21_t, X_i07_t, X_i14_t, X_i21_t, X_o07_t, X_o14_t, X_o21_t])
+y_test_all = np.concatenate([y_norm_t, y_b07_t, y_b14_t, y_b21_t, y_i07_t, y_i14_t, y_i21_t, y_o07_t, y_o14_t, y_o21_t])
+
+X_train_all = X_train_all.reshape(-1, 1024, 1)
+X_test_all = X_test_all.reshape(-1, 1024, 1)
