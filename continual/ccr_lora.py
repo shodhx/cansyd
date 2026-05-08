@@ -75,3 +75,31 @@ ate_after = backdoor_ate(X_base_train.reshape(len(X_base_train), -1), fault_old,
 drift = abs(ate_after - ate_old)
 
 print(f'CCR-LoRA: Old={old_acc:.4f}  New={new_acc:.4f}  Drift={drift:.6f}')
+
+results = []
+for lam in [0.01, 0.1, 1.0, 10.0, 100.0]:
+    ccr_model = tf.keras.Model(inp, out)
+    for epoch in range(30):
+        for i in range(0, len(X_new_train), 64):
+            batch_x = X_new_train[i:i+64].reshape(-1, 1024, 1)
+            batch_y = y_new_train[i:i+64]
+            with tf.GradientTape() as tape:
+                pred = ccr_model(batch_x, training=True)
+                ce_loss = tf.keras.losses.sparse_categorical_crossentropy(batch_y, pred)
+                feats_new = feat_model_base(batch_x, training=False)
+                norms_new = tf.norm(feats_new, axis=1)
+                causal_penalty = tf.square(norms_new - ate_old)
+                loss = tf.reduce_mean(ce_loss) + lam * tf.reduce_mean(causal_penalty)
+            grads = tape.gradient(loss, ccr_model.trainable_weights)
+            tf.keras.optimizers.Adam(0.001).apply_gradients(zip(grads, ccr_model.trainable_weights))
+    
+    old_acc = base_cnn.evaluate(X_base_train.reshape(-1,1024,1), y_base_train, verbose=0)[1]
+    new_acc = ccr_model.evaluate(X_new_train.reshape(-1,1024,1), y_new_train, verbose=0)[1]
+    feats_after = feat_model_base.predict(X_base_train.reshape(-1,1024,1), verbose=0)
+    norms_after = np.linalg.norm(feats_after, axis=1)
+    ate_after = backdoor_ate(X_base_train.reshape(len(X_base_train), -1), fault_old, norms_after, loads_old)
+    drift = abs(ate_after - ate_old)
+    results.append({'lambda': lam, 'old': old_acc, 'new': new_acc, 'drift': drift})
+
+for r in results:
+    print(f"λ={r['lambda']:.2f}  Old={r['old']:.4f}  New={r['new']:.4f}  Drift={r['drift']:.6f}")
