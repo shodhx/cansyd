@@ -1,6 +1,8 @@
 import numpy as np
 from scipy import stats
 from sklearn.linear_model import LinearRegression
+import dowhy
+from dowhy import CausalModel
 
 def backdoor_ate(X, y, treatment, confounder):
     model = LinearRegression()
@@ -46,3 +48,28 @@ ci_low, ci_high = bootstrap_ci(X_test_all.reshape(len(X_test_all), -1), fault_bi
 p_val, placebo_ratio = placebo_test(X_test_all.reshape(len(X_test_all), -1), fault_binary, feat_norms, load_labels)
 
 print(f'ATE: {ate:.4f}  CI: [{ci_low:.4f}, {ci_high:.4f}]  p={p_val:.4f}  Placebo ratio: {placebo_ratio:.2f}x')
+
+def counterfactual_scenario(X_sample, fault_pred, load_current, load_cf):
+    data = pd.DataFrame({
+        'feature_norm': [np.linalg.norm(feat_model.predict(X_sample.reshape(1,-1,1), verbose=0))],
+        'load': [load_current],
+        'fault': [fault_pred]
+    })
+    
+    causal_model = CausalModel(
+        data=data,
+        treatment='feature_norm',
+        outcome='fault',
+        common_causes=['load']
+    )
+    
+    identified = causal_model.identify_effect()
+    estimate = causal_model.estimate_effect(identified, method_name='backdoor.linear_regression')
+    
+    data_cf = data.copy()
+    data_cf['load'] = load_cf
+    
+    return estimate
+
+sample_idx = 0
+cf_result = counterfactual_scenario(X_test_all[sample_idx], int(y_test_all[sample_idx]), 3, 0)
