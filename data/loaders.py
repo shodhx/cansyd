@@ -111,3 +111,41 @@ y_test_all = np.concatenate([y_norm_t, y_b07_t, y_b14_t, y_b21_t, y_i07_t, y_i14
 
 X_train_all = X_train_all.reshape(-1, 1024, 1)
 X_test_all = X_test_all.reshape(-1, 1024, 1)
+
+
+import wfdb
+
+train_recs = [101, 106, 108, 109, 112, 114, 115, 116, 118, 119, 122, 124, 201, 203, 205, 207, 208, 209, 215, 220, 223, 230]
+test_recs = [100, 103, 105, 111, 113, 117, 121, 123, 200, 202, 210, 212, 213, 214, 219, 221, 222, 228, 231, 232, 233, 234]
+
+aami = {'N': 0, 'L': 0, 'R': 0, 'e': 0, 'j': 0, 'A': 1, 'a': 1, 'J': 1, 'S': 1, 'V': 2, 'E': 2}
+
+def load_mitbih_split(recs):
+    X = []
+    y = []
+    rr = []
+    for rec in recs:
+        try:
+            record = wfdb.rdrecord(f'mitdb/{rec}', pn_dir='mitdb')
+            ann = wfdb.rdann(f'mitdb/{rec}', 'atr', pn_dir='mitdb')
+            signal = record.p_signal[:, 0]
+            for i, (idx, sym) in enumerate(zip(ann.sample, ann.symbol)):
+                if sym not in aami:
+                    continue
+                if idx < 128 or idx > len(signal) - 128:
+                    continue
+                seg = signal[idx - 128:idx + 128]
+                seg = (seg - seg.mean()) / (seg.std() + 1e-8)
+                if i > 0:
+                    rr_int = (idx - ann.sample[i-1]) / record.fs
+                else:
+                    rr_int = 1.0
+                X.append(seg)
+                y.append(aami[sym])
+                rr.append(rr_int)
+        except:
+            continue
+    return np.array(X).reshape(-1, 256, 1), np.array(y), np.array(rr)
+
+X_train_ecg, y_train_ecg, rr_train_ecg = load_mitbih_split(train_recs)
+X_test_ecg, y_test_ecg, rr_test_ecg = load_mitbih_split(test_recs)
