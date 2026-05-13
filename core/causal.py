@@ -1,75 +1,103 @@
 import numpy as np
-from scipy import stats
-from sklearn.linear_model import LinearRegression
-import dowhy
+import pandas as pd
 from dowhy import CausalModel
+from sklearn.linear_model import LinearRegression
+from scipy import stats
 
-def backdoor_ate(X, y, treatment, confounder):
-    model = LinearRegression()
-    model.fit(np.column_stack([treatment, confounder]), y)
-    ate = model.coef_[0]
-    return ate
+def compute_vibration_rms(X):
+    return np.sqrt(np.mean(X.reshape(len(X), -1)**2, axis=1))
 
-def bootstrap_ci(X, y, treatment, confounder, n_boot=1000, alpha=0.05):
-    ates = []
-    n = len(X)
-    for _ in range(n_boot):
-        idx = np.random.choice(n, n, replace=True)
-        ate = backdoor_ate(X[idx], y[idx], treatment[idx], confounder[idx])
-        ates.append(ate)
-    lower = np.percentile(ates, 100 * alpha / 2)
-    upper = np.percentile(ates, 100 * (1 - alpha / 2))
-    return lower, upper
-
-def placebo_test(X, y, treatment, confounder, n_perm=1000):
-    real_ate = backdoor_ate(X, y, treatment, confounder)
-    placebo_ates = []
-    for _ in range(n_perm):
-        y_perm = np.random.permutation(y)
-        placebo_ates.append(backdoor_ate(X, y_perm, treatment, confounder))
-    p_value = np.mean(np.abs(placebo_ates) >= np.abs(real_ate))
-    ratio = np.abs(real_ate) / (np.mean(np.abs(placebo_ates)) + 1e-8)
-    return p_value, ratio
-
-feat_model = tf.keras.Model(model.layers[0].input, model.layers[-3].output)
-feats = feat_model.predict(X_test_all, verbose=0)
-feat_norms = np.linalg.norm(feats, axis=1)
-
-load_labels = np.concatenate([np.full(len(X_norm_t), 3), np.full(len(X_b07_t), 3), 
-                               np.full(len(X_b14_t), 3), np.full(len(X_b21_t), 3),
-                               np.full(len(X_i07_t), 3), np.full(len(X_i14_t), 3),
-                               np.full(len(X_i21_t), 3), np.full(len(X_o07_t), 3),
-                               np.full(len(X_o14_t), 3), np.full(len(X_o21_t), 3)])
-
-fault_binary = (y_test_all > 0).astype(int)
-
-ate = backdoor_ate(X_test_all.reshape(len(X_test_all), -1), fault_binary, feat_norms, load_labels)
-ci_low, ci_high = bootstrap_ci(X_test_all.reshape(len(X_test_all), -1), fault_binary, feat_norms, load_labels)
-p_val, placebo_ratio = placebo_test(X_test_all.reshape(len(X_test_all), -1), fault_binary, feat_norms, load_labels)
-
-print(f'ATE: {ate:.4f}  CI: [{ci_low:.4f}, {ci_high:.4f}]  p={p_val:.4f}  Placebo ratio: {placebo_ratio:.2f}x')
-
-def counterfactual_scenario(X_sample, fault_pred, load_current, load_cf):
-    data = pd.DataFrame({
-        'feature_norm': [np.linalg.norm(feat_model.predict(X_sample.reshape(1,-1,1), verbose=0))],
-        'load': [load_current],
-        'fault': [fault_pred]
+def backdoor_ate_dowhy(X_signal, y_binary, confounder, domain='CWRU'):
+    treatment = compute_vibration_rms(X_signal)
+    
+    df = pd.DataFrame({
+        'vibration_rms': treatment,
+        'load': confounder.flatten(),
+        'fault': y_binary.astype(int)
     })
     
-    causal_model = CausalModel(
-        data=data,
-        treatment='feature_norm',
+    model = CausalModel(
+        data=df,
+        treatment='vibration_rms',
         outcome='fault',
         common_causes=['load']
     )
     
-    identified = causal_model.identify_effect()
-    estimate = causal_model.estimate_effect(identified, method_name='backdoor.linear_regression')
+    identified = model.identify_effect(proceed_when_unidentifiable=True)
+    estimate = model.estimate_effect(
+        identified,
+        method_name='backdoor.linear_regression'
+    )
     
-    data_cf = data.copy()
-    data_cf['load'] = load_cf
-    
-    return estimate
+    ate = estimate.value
+    return ate, treatment, df
 
-sample_idx = 0
-cf_result = counterfactual_scenario(X_test_all[sample_idx], int(y_test_all[sample_idx]), 3, 0)
+def bootstrap_ci(X_signal, y_binary, confounder, n_boot=1000):
+    ates = []
+    n = len(X_signal)
+    for _ in range(n_boot):
+        idx = np.random.choice(n, n, replace=True)
+        ate, _, _ = backdoor_ate_dowhy(X_signal[idx], y_binary[idx], confounder[idx])
+        ates.append(ate)
+    return np.percentile(ates, 2.5), np.percentile(ates, 97.5)
+
+def placebo_test(X_signal, y_binary, confounder, n_perm=1000):
+    real_ate, _, _ = backdoor_ate_dowhy(X_signal, y_binary, confounder)
+    placebo_ates = []
+    for _ in range(n_perm):
+        y_perm = np.random.permutation(y_binary)
+        ate, _, _ = backdoor_ate_dowhy(X_signal, y_perm, confounder)
+        placebo_ates.append(ate)
+    p_val = np.mean(np.abs(placebo_ates) >= np.abs(real_ate))
+    ratio = np.abs(real_ate) / (np.mean(np.abs(placebo_ates)) + 1e-8)
+    return p_val, ratio
+
+def counterfactual_scenario(X_sample, load_current, load_cf, ate_estimate):
+    vibration = compute_vibration_rms(X_sample.reshape(1, -1))[0]
+    fault_prob_current = vibration * ate_estimate
+    
+    df_cf = pd.DataFrame({
+        'vibration_rms': [vibration],
+        'load': [load_cf],
+        'fault': [0]
+    })
+    
+    model = CausalModel(
+        data=df_cf,
+        treatment='vibration_rms',
+        outcome='fault',
+        common_causes=['load']
+    )
+    
+    identified = model.identify_effect()
+    
+    cf_explanation = {
+        'actual_load': load_current,
+        'cf_load': load_cf,
+        'vibration_rms': vibration,
+        'estimated_effect': ate_estimate,
+        'interpretation': f"Under load={load_cf}, estimated fault probability would differ by {ate_estimate*(load_cf-load_current):.3f}"
+    }
+    
+    return cf_explanation
+
+def analyze_causal(X_train, y_train, load_train, X_test, y_test, load_test, domain='CWRU'):
+    fault_train = (y_train > 0).astype(int)
+    
+    ate, treatment_train, df_train = backdoor_ate_dowhy(X_train, fault_train, load_train, domain)
+    ci_low, ci_high = bootstrap_ci(X_train, fault_train, load_train)
+    p_val, placebo_ratio = placebo_test(X_train, fault_train, load_train)
+    
+    results = {
+        'domain': domain,
+        'ate': ate,
+        'ci': (ci_low, ci_high),
+        'p_value': p_val,
+        'placebo_ratio': placebo_ratio,
+        'treatment': 'vibration_rms',
+        'treatment_mean': treatment_train.mean(),
+        'treatment_std': treatment_train.std(),
+        'causal_df': df_train
+    }
+    
+    return results
