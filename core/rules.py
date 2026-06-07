@@ -14,3 +14,11 @@ class BearingRule:
             4: 'IR-007',  5: 'IR-014',  6: 'IR-021',
             7: 'OR-007',  8: 'OR-014',  9: 'OR-021'
         }
+
+    def _quantize_energy(self, feature_norm):
+        """Quantizes continuous embedding L2 spaces into physical domain states."""
+        if feature_norm < self.sev_low:
+            return 'Low'
+        elif feature_norm < self.sev_high:
+            return 'Medium'
+        return 'High'
