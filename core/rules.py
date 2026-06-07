@@ -35,4 +35,12 @@ class BearingRule:
         if is_normal_class and severity == 'High':
             return False
             
+        # Rule 2: Advanced, terminal mechanical defects cannot return ambient/low feature norms
+        # Targets depths of 0.021" (labels 3, 6, 9)
+        if fault_type in [3, 6, 9] and severity == 'Low':
+            return False
+            
+        if fault_type not in self.fault_map:
+            return False
+            
         return True
