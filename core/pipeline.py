@@ -1,4 +1,3 @@
-# Save as core/pipeline.py
 import tensorflow as tf
 import numpy as np
 
