@@ -1,5 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras import layers
+import numpy as np
 
 def build_cnn(input_shape, num_classes):
     inp = layers.Input(input_shape)
@@ -25,9 +26,6 @@ def build_cnn(input_shape, num_classes):
     out = layers.Dense(num_classes, activation='softmax')(x)
     return tf.keras.Model(inp, out)
 
-model = build_cnn((1024, 1), 10)
-model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-
 def patchify(X, num_patches=8):
     batch_size = tf.shape(X)[0]
     seq_len = tf.shape(X)[1]
@@ -44,12 +42,6 @@ def build_jepa_encoder(patch_dim, encoder_dim):
     x = layers.Dense(encoder_dim)(x)
     return tf.keras.Model(inp, x)
 
-encoder = build_jepa_encoder(128, 256)
-target_encoder = build_jepa_encoder(128, 256)
-
-for w1, w2 in zip(encoder.weights, target_encoder.weights):
-    w2.assign(w1)
-
 def vicreg_loss(z1, z2, lam=25.0, mu=25.0, nu=1.0):
     inv = tf.reduce_mean(tf.square(z1 - z2))
     z1_norm = (z1 - tf.reduce_mean(z1, axis=0)) / (tf.math.reduce_std(z1, axis=0) + 1e-8)
@@ -64,31 +56,44 @@ def vicreg_loss(z1, z2, lam=25.0, mu=25.0, nu=1.0):
     cov = tf.reduce_sum(tf.square(off_diag1)) + tf.reduce_sum(tf.square(off_diag2))
     return lam * inv + mu * var + nu * cov
 
-for epoch in range(15):
+def train_jepa_backbone(X_train_all, y_train_all, epochs=15):
+    """Encapsulates the S-JEPA training execution sequence to protect global scope imports"""
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.linear_model import LogisticRegression
+
+    encoder = build_jepa_encoder(128, 256)
+    target_encoder = build_jepa_encoder(128, 256)
+
+    for w1, w2 in zip(encoder.weights, target_encoder.weights):
+        w2.assign(w1)
+
+    optimizer = tf.keras.optimizers.Adam(0.001)
+
+    for epoch in range(epochs):
+        for i in range(0, len(X_train_all), 64):
+            batch = X_train_all[i:i+64]
+            p = patchify(batch)
+            with tf.GradientTape() as tape:
+                z1 = encoder(p[:, 0], training=True)
+                z2 = target_encoder(p[:, 1], training=False)
+                loss = vicreg_loss(z1, z2)
+            grads = tape.gradient(loss, encoder.trainable_weights)
+            optimizer.apply_gradients(zip(grads, encoder.trainable_weights))
+            
+            for w1, w2 in zip(encoder.weights, target_encoder.weights):
+                w2.assign(0.99 * w2 + 0.01 * w1)
+
+    jepa_embeddings = []
     for i in range(0, len(X_train_all), 64):
         batch = X_train_all[i:i+64]
         p = patchify(batch)
-        with tf.GradientTape() as tape:
-            z1 = encoder(p[:, 0], training=True)
-            z2 = target_encoder(p[:, 1], training=False)
-            loss = vicreg_loss(z1, z2)
-        grads = tape.gradient(loss, encoder.trainable_weights)
-        tf.keras.optimizers.Adam(0.001).apply_gradients(zip(grads, encoder.trainable_weights))
-        for w1, w2 in zip(encoder.weights, target_encoder.weights):
-            w2.assign(0.99 * w2 + 0.01 * w1)
+        e = [encoder(p[:, j], training=False) for j in range(8)]
+        jepa_embeddings.append(tf.reduce_mean(tf.stack(e, axis=1), axis=1).numpy())
+    jepa_embeddings = np.concatenate(jepa_embeddings)
 
-jepa_embeddings = []
-for i in range(0, len(X_train_all), 64):
-    batch = X_train_all[i:i+64]
-    p = patchify(batch)
-    e = [encoder(p[:, j], training=False) for j in range(8)]
-    jepa_embeddings.append(tf.reduce_mean(tf.stack(e, axis=1), axis=1).numpy())
-jepa_embeddings = np.concatenate(jepa_embeddings)
+    scaler = StandardScaler()
+    jepa_tr = scaler.fit_transform(jepa_embeddings)
+    probe = LogisticRegression(max_iter=1000)
+    probe.fit(jepa_tr, y_train_all)
 
-from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LogisticRegression
-
-scaler = StandardScaler()
-jepa_tr = scaler.fit_transform(jepa_embeddings)
-probe = LogisticRegression(max_iter=1000)
-probe.fit(jepa_tr, y_train_all)
+    return encoder, probe, scaler
