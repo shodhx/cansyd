@@ -3,6 +3,10 @@ import numpy as np
 
 class CNSDPipeline:
     def __init__(self, cnn_model, jepa_probe, encoder_model, patchify_fn, rule_engine, conf_thresh=0.95, agreement_weight=0.3):
+        """
+        Neuro-Symbolic Pipeline coordinating joint connectionist networks,
+        self-supervised patch encoders, and symbolic physical veto guardrails.
+        """
         self.cnn = cnn_model
         self.jepa = jepa_probe
         self.encoder = encoder_model
@@ -10,10 +14,10 @@ class CNSDPipeline:
         self.rules = rule_engine
         self.thresh = conf_thresh
         self.weight = agreement_weight
-        self.suspicion = False # Active state feedback variable from your notebook
+        self.suspicion = False  # Active state feedback variable from your notebook
         
-        # Prevent graph tracing compilation bottlenecks by building the extractor once
-        self.feat_model = tf.keras.Model(self.cnn.layers[0].input, self.cnn.layers[-3].output)
+        # Sub-graph tracking instantiation to prevent compilation graph leaks
+        self.feat_model = tf.keras.Model(inputs=self.cnn.input, outputs=self.cnn.layers[-3].output)
         
     def predict(self, X):
         cnn_pred = self.cnn.predict(X, verbose=0)
@@ -39,16 +43,16 @@ class CNSDPipeline:
         
         results = []
         for i in range(len(X)):
-            # Adaptive thresholding logic pulled directly from your notebook's backward path
-            current_thresh = self.thresh + 0.049 if self.suspicion else self.thresh
+            # Adaptive threshold routing pulled straight from notebook cells
+            current_thresh = self.thresh + 0.05 if self.suspicion else self.thresh
             
-            # Evaluate hard physical constraints
+            # Call our newly unified boolean validator gate
             is_symbolically_valid = self.rules.evaluate(cnn_class[i], cnn_conf[i], feat_norms[i])
             
-            # If a major contradiction is encountered, alter the global network suspicion state
+            # True neuro-symbolic routing and veto enforcement
             if not is_symbolically_valid:
                 self.suspicion = True
-                final_class = jepa_class[i] # Force fallback to self-supervised foundational probe
+                final_class = jepa_class[i]  # Hard fallback to self-supervised probe
             else:
                 if cnn_conf[i] < current_thresh and agreement[i] == 0:
                     final_class = jepa_class[i]
