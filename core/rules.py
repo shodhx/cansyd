@@ -44,3 +44,15 @@ class BearingRule:
             return False
             
         return True
+    
+    def get_metadata(self, fault_type, feature_norm):
+        """Helper to compile formal report maps once structural states pass validation."""
+        severity = self._quantize_energy(feature_norm)
+        return {
+            'fault': self.fault_map.get(fault_type, 'Unknown'),
+            'severity': severity,
+            'is_valid': self.evaluate(fault_type, 1.0, feature_norm)
+        }
+
+# Global module execution instance
+rule_engine = BearingRule()
