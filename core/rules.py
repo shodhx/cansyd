@@ -22,3 +22,17 @@ class BearingRule:
         elif feature_norm < self.sev_high:
             return 'Medium'
         return 'High'
+    
+    def evaluate(self, fault_type, confidence, feature_norm):
+        """
+        Validates structural consistency. Returns a boolean truth flag.
+        Returns False if a connectionist network prediction violates physical constraints.
+        """
+        severity = self._quantize_energy(feature_norm)
+        is_normal_class = (fault_type == 0)
+        
+        # Rule 1: A normal classification cannot coexist with high structural energy profiles
+        if is_normal_class and severity == 'High':
+            return False
+            
+        return True
