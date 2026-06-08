@@ -1,4 +1,3 @@
-# Save as continual/ccr_lora.py
 import tensorflow as tf
 import numpy as np
 from core.architecture import build_cnn
@@ -18,7 +17,11 @@ class LoRAAdapter(tf.keras.layers.Layer):
         return x + tf.matmul(x, tf.matmul(self.A, self.B))
 
 def train_ccr_lora(base_model, X_new, y_new, ate_old, lam=1.0):
-    """Encapsulated task adaptation enforcing Causal Consistency Regularization"""
+    """
+    Adapts late-stage layer weights via Low-Rank Adaptation matrices
+    constrained by a soft Causal Consistency Regularization (CCR) penalty variable.
+    """
+    # Freeze the base CNN layers to lock feature representations
     for layer in base_model.layers[:-1]:
         layer.trainable = False
 
@@ -30,15 +33,15 @@ def train_ccr_lora(base_model, X_new, y_new, ate_old, lam=1.0):
     feat = base_model.layers[-3](x)
     lora_feat = LoRAAdapter(dim=feat.shape[-1], rank=4)(feat)
     drop = base_model.layers[-2](lora_feat)
-    out = tf.keras.layers.Dense(len(np.unique(y_new)), activation='softmax')(drop)
+    out = tf.keras.layers.Dense(len(np.unique(y_new)) + 1, activation='softmax')(drop)
     
     ccr_model = tf.keras.Model(inp, out)
     optimizer = tf.keras.optimizers.Adam(0.001)
     
-    # Feature extraction layer tracking
-    feat_extractor = tf.keras.Model(base_model.input_shape[1:], feat)
+    # Isolate feature tracking subgraph
+    feat_extractor = tf.keras.Model(inputs=base_model.input, outputs=base_model.layers[-3].output)
     
-    # Training Loop
+    # Parameterized optimization loop
     for epoch in range(10):
         for idx in range(0, len(X_new), 64):
             bx = X_new[idx:idx+64]
@@ -48,6 +51,7 @@ def train_ccr_lora(base_model, X_new, y_new, ate_old, lam=1.0):
                 pred = ccr_model(bx, training=True)
                 ce_loss = tf.reduce_mean(tf.keras.losses.sparse_categorical_crossentropy(by, pred))
                 
+                # Dynamic feature norm calculations matched to notebook cells
                 feats_new = feat_extractor(bx, training=False)
                 norms_new = tf.reduce_mean(tf.norm(feats_new, axis=1))
                 causal_penalty = tf.square(norms_new - ate_old)
