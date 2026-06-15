@@ -22,8 +22,8 @@ from core.causal import (analyze_causal, cate_by_group, causal_invariance_across
                          extract_feature_norms)
 from eval.classification import train_cnn, evaluate_protocol_b
 from eval.baseline import run_published_baselines, run_irm
-from eval.ablation import run_ablation
-from eval.calibration import run_ece, run_proposition_1
+from eval.ablation import run_ablation, consensus_scores
+from eval.calibration import run_ece, run_proposition1
 from continual.experiment import run_continual_comparison
 
 SEV_MAP = {'Low': 1, 'Medium': 2, 'High': 3}
@@ -102,9 +102,11 @@ def main():
                  u_f, ate, risk_midpoint)
 
     print('\n[5/6] CALIBRATION + PROPOSITION 1')
-    run_ece(y_test, preds, confs, feat_norms_te, severities, jepa_agrees,
-            u_f, ate, risk_midpoint)
-    run_proposition_1(y_test, preds, feat_norms_te, ate)
+    correct = (preds == y_test).astype(int)
+    cnsd_scores = consensus_scores(preds, confs, feat_norms_te, severities,
+                                   jepa_agrees, u_f, ate, risk_midpoint)
+    run_ece(confs, cnsd_scores, correct)
+    run_proposition1(feat_norms_te, ate, correct)
 
     print('\n[6/6] CONTINUAL LEARNING')
     run_continual_comparison(X_train, y_train, X_test, y_test)

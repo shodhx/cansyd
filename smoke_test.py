@@ -62,8 +62,8 @@ check("rule metadata severity", md['severity'] in ('Low', 'Medium', 'High'))
 # 4. eval signals + tables (1 seed, tiny)
 print("\n[4] eval modules")
 from eval.classification import train_cnn, evaluate_protocol_b
-from eval.ablation import run_ablation
-from eval.calibration import run_ece, run_proposition_1
+from eval.ablation import run_ablation, consensus_scores
+from eval.calibration import run_ece, run_proposition1
 m = train_cnn(X_train, y_train, seed=42, epochs=1)
 probs = m.predict(X_test, verbose=0); preds = probs.argmax(1); confs = probs.max(1)
 sev = np.clip(np.round(np.random.uniform(0, 3, N_TE)), 0, 3)
@@ -72,10 +72,12 @@ u_f = np.random.normal(0, 0.3, N_TE)
 ate = r['ate']; rm = float(np.median(fn_te)) * abs(ate) or 1e-6
 ab = run_ablation(y_test, preds, confs, fn_te, sev, jepa, u_f, ate, rm)
 check("ablation 5 configs", len(ab) == 5)
-ece = run_ece(y_test, preds, confs, fn_te, sev, jepa, u_f, ate, rm)
-check("ece keys", {'ece_cnn', 'ece_cnsd'} <= set(ece))
-p1 = run_proposition_1(y_test, preds, fn_te, ate)
-check("proposition 1 keys", {'rho', 'p', 'monotone'} <= set(p1))
+correct = (preds == y_test).astype(int)
+cnsd_scores = consensus_scores(preds, confs, fn_te, sev, jepa, u_f, ate, rm)
+ece = run_ece(confs, cnsd_scores, correct)
+check("ece keys", {'cnn', 'cnsd'} <= set(ece))
+p1 = run_proposition1(fn_te, ate, correct)
+check("proposition 1 keys", {'rho', 'p', 'monotonic'} <= set(p1))
 
 # 5. Baselines (1 seed each - still trains real nets, so keep tiny)
 print("\n[5] baselines (1 seed)")
