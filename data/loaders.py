@@ -165,4 +165,9 @@ def load_mfpt():
             y.append(label)
             rpm.append(np.random.uniform(250, 300))
             
-    return np.array(X).reshape(-1, 1024, 1), np.array(y), np.array(rpm)
+    from sklearn.model_selection import train_test_split
+    X = np.array(X).reshape(-1, 1024, 1)
+    y = np.array(y)
+    rpm = np.array(rpm)
+    # Split into train/test so callers get 6 values (X_tr, X_te, y_tr, y_te, rpm_tr, rpm_te)
+    return train_test_split(X, y, rpm, test_size=0.3, random_state=42, stratify=y)
