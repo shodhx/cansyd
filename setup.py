@@ -11,7 +11,6 @@ setup(
         'pandas>=2.0.3',
         'scikit-learn>=1.3.0',
         'wfdb>=4.1.0',
-        'dowhy>=0.11',
     ],
     python_requires='>=3.8',
 )
