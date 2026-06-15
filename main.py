@@ -17,7 +17,7 @@ def main():
     # Load foundational components from the unified core modules
     from data.loaders import load_cwru_all, load_cmapss, load_mitbih_split, load_mfpt
     from core.architecture import build_cnn, train_jepa_backbone, patchify
-    from core.causal import analyze_causal
+    from core.causal import analyze_causal, extract_feature_norms, compute_vibration_rms
     from core.pipeline import CNSDPipeline
     from core.rules import rule_engine
     from core.counterfactual import generate_counterfactual
@@ -65,14 +65,17 @@ def main():
     cwru_acc = np.mean([1 if r['class'] == y_test[i] else 0 for i, r in enumerate(results_cwru)])
     print(f'  CNSD Consensus Pipeline Accuracy: {cwru_acc:.4f}')
     
-    causal_cwru = analyze_causal(X_train, y_train, load_train, X_test, y_test, load_test, 'CWRU')
+    # Treatment = CNN feature-norm (the notebook's 'vibration_energy'), confounder = load
+    cwru_treat = extract_feature_norms(cnn, X_train)
+    causal_cwru = analyze_causal(cwru_treat, y_train, load_train, 'CWRU')
 
     # ---- DOMAIN 2: NASA CMAPSS ----
     print('\n' + '='*80)
     print('DOMAIN 2: NASA CMAPSS TURBOFAN EXPERIMENTS')
     print('='*80)
     # Map back to classifications matching the target notebook evaluation layout
-    causal_cmapss = analyze_causal(X_train_cm, y_train_cm_bin, op_train, X_test_cm, y_test_cm_bin, op_test, 'CMAPSS')
+    cmapss_treat = compute_vibration_rms(X_train_cm)
+    causal_cmapss = analyze_causal(cmapss_treat, y_train_cm_bin, op_train, 'CMAPSS')
 
     # ---- DOMAIN 3: MIT-BIH ----
     print('\n' + '='*80)
@@ -80,13 +83,15 @@ def main():
     print('='*80)
     cnn_ecg = build_cnn(input_shape=(256, 1), num_classes=5)
     cnn_ecg.fit(X_train_ecg, y_train_ecg, epochs=20, batch_size=128, verbose=0, validation_split=0.1)
-    causal_mitbih = analyze_causal(X_train_ecg, y_train_ecg, rr_train, X_test_ecg, y_test_ecg, rr_test, 'MIT-BIH')
+    ecg_treat = extract_feature_norms(cnn_ecg, X_train_ecg)
+    causal_mitbih = analyze_causal(ecg_treat, y_train_ecg, rr_train, 'MIT-BIH')
 
     # ---- DOMAIN 4: MFPT ----
     print('\n' + '='*80)
     print('DOMAIN 4: MFPT BEARING EXPERIMENTS')
     print('='*80)
-    causal_mfpt = analyze_causal(X_train_mfpt, y_train_mfpt, rpm_train, X_test_mfpt, y_test_mfpt, rpm_test, 'MFPT')
+    mfpt_treat = compute_vibration_rms(X_train_mfpt)
+    causal_mfpt = analyze_causal(mfpt_treat, y_train_mfpt, rpm_train, 'MFPT')
 
     # ==================== CONTINUAL LEARNING MECHANICS ====================
     print('\n' + '='*80)
