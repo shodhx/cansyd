@@ -68,8 +68,8 @@ def load_cwru_all(train_loads=(0,1,2), test_loads=(3,)):
 # ── 2. NASA CMAPSS LOADER ──
 def load_cmapss():
     try:
-        # Attempt to load from local file copy if it exists
-        df_train = pd.read_csv('train_FD001.txt', sep=' ', header=None)
+        # Read from the cached data dir (configs/default.yaml -> data/raw/cmapss).
+        df_train = pd.read_csv(f'{CMAPSS_DIR}/train_FD001.txt', sep=' ', header=None)
         df_train.drop(df_train.columns[[26, 27]], axis=1, inplace=True)
         df_train.columns = ['unit', 'cycle', 'op1', 'op2', 'op3'] + [f's{i}' for i in range(1, 22)]
         
@@ -87,7 +87,9 @@ def load_cmapss():
         return train_test_split(X, y, op, test_size=0.3, random_state=42)
         
     except Exception as e:
-        print("  ⚠️  CMAPSS raw text asset unavailable or network path broken. Deploying structural simulation generator...")
+        print("  [SYNTHETIC] CMAPSS raw data not found at "
+              f"{CMAPSS_DIR}/ — using a reproducible synthetic generator. "
+              "Results from this fallback must NOT be reported as real-data results.")
         # Self-contained simulation to perfectly match expected matrices [30, 14] or [X, 20]
         np.random.seed(42)
         total_samples = 800
@@ -138,7 +140,15 @@ def load_mitbih_split(record_ids, seg_len=256):
 
 # ── 4. MFPT BEARING LOADER ──
 def load_mfpt():
-    """Extracts variable RPM industrial rolling-element diagnostics."""
+    """Extracts variable RPM industrial rolling-element diagnostics.
+
+    NOTE: this loader currently has no real-MFPT download path — it returns a
+    reproducible synthetic signal that mirrors the Section 9C fallback. Numbers
+    from it characterise the pipeline on synthetic data only and must not be
+    reported as real MFPT results until a real-data path is wired in.
+    """
+    print("  [SYNTHETIC] MFPT real data not bundled — using reproducible "
+          "synthetic signals (seed=42). Do not report as real-data results.")
     np.random.seed(42)
     # Uniform simulation fallback matching Section 9C logic models
     t = np.linspace(0, 2, 48828 * 2)
