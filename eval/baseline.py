@@ -39,6 +39,14 @@ def build_ticnn():
                   loss='sparse_categorical_crossentropy', metrics=['accuracy'])
     return model
 
+def build_cnsd_wdcnn():
+    """CNSD backbone (build_cnn) wrapped to take no args and self-compile,
+    so it matches the builder() interface used by _train_baseline."""
+    model = build_cnn((1024, 1), 10)
+    model.compile(optimizer=tf.keras.optimizers.Adam(0.001),
+                  loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    return model
+
 def _train_baseline(builder, name, X_train, y_train, X_test, y_test, seeds=(42, 43, 44)):
     f1s = []
     for s in seeds:
@@ -65,7 +73,7 @@ def run_published_baselines(X_train, y_train, X_test, y_test, seeds=(42, 43, 44)
     print('=== PUBLISHED BASELINES (Protocol B - Cross-Load) ===')
     f1_wdcnn = _train_baseline(build_wdcnn, 'WDCNN', X_train, y_train, X_test, y_test, seeds)
     f1_ticnn = _train_baseline(build_ticnn, 'TICNN', X_train, y_train, X_test, y_test, seeds)
-    f1_cnsd = _train_baseline(build_cnn, 'CNSD-WDCNN', X_train, y_train, X_test, y_test, seeds)
+    f1_cnsd = _train_baseline(build_cnsd_wdcnn, 'CNSD-WDCNN', X_train, y_train, X_test, y_test, seeds)
     return {
         'WDCNN': (float(np.mean(f1_wdcnn)), float(np.std(f1_wdcnn))),
         'TICNN': (float(np.mean(f1_ticnn)), float(np.std(f1_ticnn))),

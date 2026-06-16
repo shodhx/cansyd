@@ -28,6 +28,14 @@ REPLAY_RATIO = 2
 LORA_RANK = 8
 FISHER_SAMPLES = 200
 
+def _build(num_classes):
+    """build_cnn wrapper: supplies input_shape and compiles (build_cnn returns an
+    uncompiled model and requires input_shape)."""
+    m = build_cnn((1024, 1), num_classes)
+    m.compile(optimizer=tf.keras.optimizers.Adam(0.001),
+              loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    return m
+
 def _feat_norms(feat_ext, X):
     feats = feat_ext.predict(X, verbose=0)
     return np.linalg.norm(feats, axis=1)
@@ -39,7 +47,7 @@ def _ate(feat_ext, X_old_te, y_old_te):
 
 def train_base(X_base_tr, y_base_tr, X_base_te, y_base_te, seed=42):
     tf.random.set_seed(seed); np.random.seed(seed)
-    base_cnn = build_cnn(num_classes=7)
+    base_cnn = _build(7)
     es = callbacks.EarlyStopping(monitor='val_accuracy', patience=10, restore_best_weights=True, verbose=0)
     lr = callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, min_lr=1e-5, verbose=0)
     base_cnn.fit(X_base_tr, y_base_tr, epochs=60, batch_size=64,
@@ -92,7 +100,7 @@ def _compute_fisher(model, X, y, n_samples=FISHER_SAMPLES):
     return [f / n_samples for f in fisher]
 
 def _train_ewc(base_cnn, X_comb, y_comb, lam, epochs=30):
-    ewc = build_cnn(num_classes=10)
+    ewc = _build(10)
     _copy_base_weights(base_cnn, ewc)
     fisher = _compute_fisher(ewc, X_comb, y_comb)
     old_p = [v.numpy().copy() for v in ewc.trainable_variables]
@@ -149,7 +157,7 @@ def run_continual_comparison(X_train, y_train, X_test, y_test, n_shots=(10, 50, 
     X_c = np.concatenate([X_base_tr[ridx], X_100]); y_c = np.concatenate([y_base_tr[ridx], y_100])
 
     # Naive
-    naive = build_cnn(num_classes=10); _copy_base_weights(base_cnn, naive)
+    naive = _build(10); _copy_base_weights(base_cnn, naive)
     naive.fit(X_c, y_c, epochs=15, batch_size=32, verbose=0)
     naive_feat = tf.keras.Model(inputs=naive.layers[0].input, outputs=naive.layers[-3].output)
     naive_o, naive_n, naive_a = _evaluate(naive, X_base_te, y_base_te, X_new_te, y_new_te, naive_feat)
