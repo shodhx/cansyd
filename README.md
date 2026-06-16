@@ -311,5 +311,4 @@ If you use this work, please cite:
 
 ## License
 
-Released under the MIT License. Add a `LICENSE` file to the repository root to make
-this effective.
+Released under the MIT License.
