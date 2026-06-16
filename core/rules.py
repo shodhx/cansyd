@@ -5,14 +5,14 @@ class BearingRule:
         between stochastic latent embeddings and domain physics rules.
 
         Severity is graded *relative* to the calibrated median feature-norm
-        (CAL_MEDIAN_NORM = 15.18 in the notebook). CWRU feature norms sit
+        (calibrated median feature-norm = 15.18). CWRU feature norms sit
         around 15, so the old absolute 0.3 / 0.6 thresholds quantised every
         sample as 'High' and vetoed every Normal prediction.
         """
         self.sev_low = ref_norm * low_frac
         self.sev_high = ref_norm * high_frac
         
-        # Hard schema definitions matching your notebook's CWRU/MFPT taxonomy
+        # CWRU 10-class bearing fault taxonomy
         self.fault_map = {
             0: 'Normal', 
             1: 'Ball-007', 2: 'Ball-014', 3: 'Ball-021',

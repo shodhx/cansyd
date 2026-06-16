@@ -51,7 +51,7 @@ def train_ccr_lora(base_model, X_new, y_new, ate_old, lam=1.0):
                 pred = ccr_model(bx, training=True)
                 ce_loss = tf.reduce_mean(tf.keras.losses.sparse_categorical_crossentropy(by, pred))
                 
-                # Dynamic feature norm calculations matched to notebook cells
+                # Feature-norm consistency penalty against the frozen base ATE
                 feats_new = feat_extractor(bx, training=False)
                 norms_new = tf.reduce_mean(tf.norm(feats_new, axis=1))
                 causal_penalty = tf.square(norms_new - ate_old)

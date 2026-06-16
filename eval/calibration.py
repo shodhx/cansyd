@@ -17,8 +17,8 @@ def expected_calibration_error(confidences, accuracies, n_bins=10):
 
 def run_ece(cnn_confs, cnsd_scores, correct):
     """
-    Notebook target: CNN softmax ECE=0.0015, CNSD bidirectional ECE=0.2242 (acc 0.9909).
-    The CNSD score is far worse-calibrated than the raw softmax — reported honestly.
+    Expected: CNN softmax ECE=0.0015, CNSD bidirectional ECE=0.2242 (acc 0.9909).
+    The CNSD consensus score is worse-calibrated than the raw softmax.
     """
     correct = np.asarray(correct, dtype=float)
     ece_cnn = expected_calibration_error(cnn_confs, correct)
@@ -35,8 +35,8 @@ def run_proposition1(feat_norms, ate, correct):
     """
     Proposition 1 check with a direction-invariant risk measure:
         risk = |abs(norm*ate) - median(abs(norm*ate))|
-    Notebook result: VIOLATED, rho=0.0356, p=0.1625 — reported as a genuine limitation,
-    not hidden. Causal contrastive features don't make extreme risk predict error here.
+    Expected: VIOLATED, rho=0.0356, p=0.1625. A stated limitation: causal
+    contrastive features don't make extreme risk predict error here.
     """
     feat_norms = np.asarray(feat_norms, dtype=float)
     correct = np.asarray(correct, dtype=int)
@@ -59,7 +59,7 @@ def run_proposition1(feat_norms, ate, correct):
     elif rho > 0 and p < 0.05:
         print('Condition 1 partially satisfied (weaker sufficient condition).')
     else:
-        print('Condition 1 NOT supported on this dataset - reported as a limitation:')
+        print('Condition 1 NOT supported on this dataset - stated as a limitation:')
         print('extreme risk deviations do not predict classification error here.')
         print('The bidirectional mechanism affects ECE via EMA smoothing, not monotonicity.')
     return {'rho': float(rho), 'p': float(p), 'monotonic': bool(monotonic),

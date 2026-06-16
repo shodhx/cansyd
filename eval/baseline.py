@@ -4,7 +4,7 @@ from tensorflow.keras import layers, models, callbacks
 from sklearn.metrics import f1_score
 from core.architecture import build_cnn
 
-# ── Published architectures (faithful to the notebook) ──────────────────────
+# ── Published baseline architectures (WDCNN, TICNN) ──────────────────────
 
 def build_wdcnn():
     model = models.Sequential([
@@ -57,12 +57,12 @@ def _train_baseline(builder, name, X_train, y_train, X_test, y_test, seeds=(42, 
 
 def run_published_baselines(X_train, y_train, X_test, y_test, seeds=(42, 43, 44)):
     """
-    Protocol B comparison. Notebook targets:
+    Protocol B comparison. Expected:
       WDCNN      0.8815 +/- 0.0046
       TICNN      0.8720 +/- 0.0269
       CNSD-WDCNN 0.8784 +/- 0.0063   (build_cnn backbone, no contrastive training)
     """
-    print('=== PUBLISHED BASELINES (Protocol B — Cross-Load) ===')
+    print('=== PUBLISHED BASELINES (Protocol B - Cross-Load) ===')
     f1_wdcnn = _train_baseline(build_wdcnn, 'WDCNN', X_train, y_train, X_test, y_test, seeds)
     f1_ticnn = _train_baseline(build_ticnn, 'TICNN', X_train, y_train, X_test, y_test, seeds)
     f1_cnsd = _train_baseline(build_cnn, 'CNSD-WDCNN', X_train, y_train, X_test, y_test, seeds)
@@ -116,7 +116,7 @@ def train_irm(X_tr, y_tr, loads_tr, X_te, y_te, lam_irm=1.0, epochs=60, seed=42)
     return f1_score(y_te, yp, average='weighted')
 
 def run_irm(X_train, y_train, loads_train, X_test, y_test, lambdas=(0.1, 1.0), seeds=(42, 43, 44)):
-    """Notebook target: best lambda=1.0 -> F1 = 0.8542 +/- 0.1029."""
+    """Expected: best lambda=1.0 -> F1 = 0.8542 +/- 0.1029."""
     print('=== INVARIANT RISK MINIMIZATION (IRMv1) ===')
     print(f'{"Lambda":>10} {"F1_mean":>10} {"F1_std":>10} {"Seeds":>6}')
     print('-' * 40)

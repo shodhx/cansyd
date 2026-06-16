@@ -10,7 +10,7 @@ Phases:
      calibration, continual learning
 
 This is a full GPU reproduction (Kaggle/Colab T4 is enough). Numbers should match
-the notebook within seed variance. See README for expected values.
+the expected values within seed variance. See README.
 """
 import numpy as np
 import tensorflow as tf
@@ -40,7 +40,7 @@ def jepa_agreement(encoder, probe, scaler, preds, X, num_patches=8, batch=64):
     return (preds == jepa_class).astype(float)
 
 def abduct_u_f(feat_norms_tr, load_tr, fault_tr, feat_norms_te, load_te, fault_te):
-    """Structural abduction of exogenous noise U_f (cell 24)."""
+    """Structural abduction of exogenous noise U_f."""
     from sklearn.linear_model import LinearRegression
     from sklearn.preprocessing import StandardScaler
     sc = StandardScaler().fit(load_tr.reshape(-1, 1))

@@ -1,19 +1,19 @@
 """
-Continual-learning comparison (notebook Step 13).
+Continual-learning comparison.
 
 Base classes 0-6 are learned first; new classes 7-9 are added few-shot with
-2x replay. We compare four methods that ACTUALLY RAN in the notebook:
+2x replay. Four methods are compared (expected N=100/class results):
 
-    Method            Old_Acc  New_Acc  ATE_drift   (N=100/class targets)
+    Method            Old_Acc  New_Acc  ATE_drift
     Naive fine-tune    0.9351   0.9972   0.1151
     EWC (best lambda)  0.9705   0.9860   0.1163
     Standard LoRA      0.9410   0.8796   0.0000
     Causal M. LoRA     0.8955   0.8627   0.0000
 
-Frozen-backbone methods (LoRA, CML) get ATE_drift = 0 by construction. As the
-notebook states, that is tautological for any frozen backbone; the NOVEL claim
-is CCR-LoRA (partial adaptation, drift < 0.01) which is NOT reproduced here
-because it was never executed in the notebook. See continual/ccr_lora.py.
+Frozen-backbone methods (LoRA, CML) have ATE_drift = 0 by construction, which is
+tautological for any frozen backbone. CCR-LoRA (partial adaptation, target
+drift < 0.01) is NOT evaluated here - it is not yet validated. See
+continual/ccr_lora.py.
 """
 import numpy as np
 import tensorflow as tf
@@ -126,7 +126,7 @@ def run_continual_comparison(X_train, y_train, X_test, y_test, n_shots=(10, 50, 
     print(f'ATE (old classes, before adaptation): {ate_before:.4f}')
 
     # Few-shot frozen-LoRA sweep (this is the 'Causal M. LoRA' row at N=100)
-    print('\n=== CAUSAL MASKED LoRA — FEW-SHOT CONTINUAL LEARNING ===')
+    print('\n=== CAUSAL MASKED LoRA - FEW-SHOT CONTINUAL LEARNING ===')
     print(f'{"N/class":>8} {"Old_Acc":>10} {"New_Acc":>10} {"ATE_drift":>10}')
     print('-' * 42)
     sweep = []
@@ -162,7 +162,7 @@ def run_continual_comparison(X_train, y_train, X_test, y_test, n_shots=(10, 50, 
         if best_ewc is None or o > best_ewc[1]:
             best_ewc = (lam, o, n, a)
 
-    # Standard LoRA (frozen) and CML (frozen) — both drift 0 by construction
+    # Standard LoRA (frozen) and CML (frozen) - both drift 0 by construction
     std_lora = _build_lora_model(base_feat); std_lora.fit(X_c, y_c, epochs=15, batch_size=32, verbose=0)
     std_o, std_n, std_a = _evaluate(std_lora, X_base_te, y_base_te, X_new_te, y_new_te, base_feat)
     cml_o, cml_n, cml_drift = sweep[-1][1], sweep[-1][2], sweep[-1][3]
@@ -179,5 +179,5 @@ def run_continual_comparison(X_train, y_train, X_test, y_test, n_shots=(10, 50, 
     for name, (o, n, d) in table.items():
         print(f'{name:<22} {o:>10.4f} {n:>10.4f} {d:>10.6f}')
     print('\nFrozen-backbone methods (LoRA, CML) have drift=0 by construction.')
-    print('CCR-LoRA (partial adaptation, the novel claim) is NOT run here - never executed in the notebook.')
+    print('CCR-LoRA (partial adaptation) is NOT evaluated here - not yet validated. See continual/ccr_lora.py.')
     return {'sweep': sweep, 'table': table, 'ate_before': float(ate_before)}

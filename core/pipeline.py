@@ -14,7 +14,7 @@ class CNSDPipeline:
         self.rules = rule_engine
         self.thresh = conf_thresh
         self.weight = agreement_weight
-        self.suspicion = False  # Active state feedback variable from your notebook
+        self.suspicion = False  # Active suspicion flag for adaptive thresholding
         
         # Sub-graph tracking instantiation to prevent compilation graph leaks
         self.feat_model = tf.keras.Model(inputs=self.cnn.input, outputs=self.cnn.layers[-3].output)
@@ -43,7 +43,7 @@ class CNSDPipeline:
         
         results = []
         for i in range(len(X)):
-            # Adaptive threshold routing pulled straight from notebook cells
+            # Raise the confidence threshold once suspicion has been triggered
             current_thresh = self.thresh + 0.05 if self.suspicion else self.thresh
             
             # Call our newly unified boolean validator gate

@@ -15,7 +15,7 @@ def train_cnn(X_train, y_train, seed=42, epochs=30, batch_size=64):
 def evaluate_protocol_b(X_train, y_train, X_test, y_test, seeds=(42, 123, 456), epochs=30, report=False):
     """
     CNSD-CNN backbone on Protocol B (cross-load: train loads 0/1/2, test load 3).
-    Notebook target: weighted F1 = 0.8784 +/- 0.0063.
+    Expected: weighted F1 = 0.8784 +/- 0.0063 (Protocol B).
     Returns the mean/std F1 and the last trained model (handy for downstream layers).
     """
     f1s = []

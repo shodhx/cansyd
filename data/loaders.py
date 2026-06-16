@@ -88,7 +88,7 @@ def load_cmapss():
         
     except Exception as e:
         print("  [SYNTHETIC] CMAPSS raw data not found at "
-              f"{CMAPSS_DIR}/ — using a reproducible synthetic generator. "
+              f"{CMAPSS_DIR}/ - using a reproducible synthetic generator. "
               "Results from this fallback must NOT be reported as real-data results.")
         # Self-contained simulation to perfectly match expected matrices [30, 14] or [X, 20]
         np.random.seed(42)
@@ -142,12 +142,12 @@ def load_mitbih_split(record_ids, seg_len=256):
 def load_mfpt():
     """Extracts variable RPM industrial rolling-element diagnostics.
 
-    NOTE: this loader currently has no real-MFPT download path — it returns a
+    NOTE: this loader currently has no real-MFPT download path - it returns a
     reproducible synthetic signal that mirrors the Section 9C fallback. Numbers
     from it characterise the pipeline on synthetic data only and must not be
     reported as real MFPT results until a real-data path is wired in.
     """
-    print("  [SYNTHETIC] MFPT real data not bundled — using reproducible "
+    print("  [SYNTHETIC] MFPT real data not bundled - using reproducible "
           "synthetic signals (seed=42). Do not report as real-data results.")
     np.random.seed(42)
     # Uniform simulation fallback matching Section 9C logic models

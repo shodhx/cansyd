@@ -1,13 +1,13 @@
 import numpy as np
 
-# Consensus weights derived from the calibration set in the notebook (cell 13/26).
+# Consensus weights derived from the calibration split.
 DEFAULT_WEIGHTS = {'cnn': 0.05, 'sym': 0.2, 'causal': 0.3, 'cf': 0.15, 'jepa': 0.3}
 
 def consensus_scores(preds, confs, feat_norms, severities, jepa_agrees, u_f, ate,
                      risk_midpoint, weights=DEFAULT_WEIGHTS,
                      dis_caus=False, dis_jepa=False, forward_only=False, alpha=0.3):
     """
-    Per-sample CNSD consensus score (faithful port of run_ablation_fast).
+    Per-sample CNSD consensus score with ablation toggles.
       severities : per-sample severity level in {0,1,2,3}
       jepa_agrees: per-sample 1.0 if JEPA agrees with the CNN, else 0.0
       u_f        : per-sample exogenous counterfactual noise (abducted)
@@ -45,7 +45,7 @@ def consensus_scores(preds, confs, feat_norms, severities, jepa_agrees, u_f, ate
 def run_ablation(y_test, preds, confs, feat_norms, severities, jepa_agrees, u_f, ate,
                  risk_midpoint, weights=DEFAULT_WEIGHTS):
     """
-    Five-config ablation (Protocol B). Notebook targets:
+    Five-config ablation (Protocol B). Expected:
       Full CNSD (bidir)  acc 0.9909  reliable 0.9236  score 0.7667
       Forward only       acc 0.9909  reliable 0.9100  score 0.7675
       -Causal            acc 0.9909  reliable 0.6587  score 0.5623

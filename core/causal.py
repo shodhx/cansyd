@@ -7,7 +7,7 @@ def compute_vibration_rms(X):
     return np.sqrt(np.mean(X.reshape(len(X), -1) ** 2, axis=1))
 
 def feature_norm(features):
-    """CNN feature-norm treatment — the notebook's 'vibration_energy' (cell 20)."""
+    """CNN feature-norm treatment ('vibration_energy' proxy)."""
     return np.linalg.norm(features, axis=1)
 
 def extract_feature_norms(cnn, X, batch_size=128):
@@ -54,7 +54,7 @@ def analyze_causal(treatment, fault, confounder, domain='CWRU'):
       treatment : CNN feature-norm (CWRU/ECG) or vibration RMS (MFPT).
       fault     : labels; binarised as (label > 0).
       confounder: operating load / condition.
-    Notebook CWRU target: ATE ~ -0.069, placebo > 100x, p < 0.001.
+    Expected CWRU: ATE ~ -0.069, placebo > 100x, p < 0.001.
     """
     fault = (np.asarray(fault) > 0).astype(int)
     treatment = np.asarray(treatment, float)
@@ -67,12 +67,12 @@ def analyze_causal(treatment, fault, confounder, domain='CWRU'):
         'treatment_mean': float(treatment.mean()), 'treatment_std': float(treatment.std()),
     }
 
-# ── CATE: per-fault-type heterogeneity (cell 22) ────────────────────────────
+# ── CATE: per-fault-type heterogeneity ──────────────────────────────────────
 
 def cate_by_group(treatment, outcome, group_labels, confounder, n_boot=500, seed=42, min_n=30):
     """
     Conditional ATE per group. Outcome is logit(P(fault)) to avoid softmax saturation.
-    Notebook: per-fault CATE spans ~-0.002..+0.562, variance ~0.042, all significant.
+    Expected: per-fault CATE spans ~-0.002..+0.562, variance ~0.042, all significant.
     """
     rng = np.random.default_rng(seed)
     treatment = np.asarray(treatment, float)
@@ -105,12 +105,12 @@ def cate_by_group(treatment, outcome, group_labels, confounder, n_boot=500, seed
         print(f'\nCATE variance: {var:.6f}  ->  Heterogeneity: {"HIGH" if var > 0.01 else "LOW"}')
     return results
 
-# ── Causal invariance across operating loads (cell 45) ──────────────────────
+# ── Causal invariance across operating loads ────────────────────────────────
 
 def causal_invariance_across_loads(treatment, fault, loads):
     """
     Per-load ATE via simple OLS (a single load has no confounder variation).
-    Notebook: ATE ~ -0.062..-0.074 across loads 0-3, CV ~ 0.066,
+    Expected: ATE ~ -0.062..-0.074 across loads 0-3, CV ~ 0.066,
     direction invariant (magnitude varies with operating condition).
     """
     fault = (np.asarray(fault) > 0).astype(int)

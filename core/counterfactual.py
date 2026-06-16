@@ -7,7 +7,7 @@ def generate_counterfactual(X_sample, y_actual, load_actual, load_counterfactual
     (Judea Pearl's Causal Hierarchy Rung 3) to infer unit-level risk adjustments.
     """
     if structural_coefficients is None:
-        # Synced explicitly with the notebook's validated structural parameters
+        # Structural coefficients for the abduction-action-prediction step
         structural_coefficients = {'alpha': 0.05, 'beta': 0.8}
         
     # Extract continuous physical metrics

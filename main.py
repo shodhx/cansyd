@@ -65,7 +65,7 @@ def main():
     cwru_acc = np.mean([1 if r['class'] == y_test[i] else 0 for i, r in enumerate(results_cwru)])
     print(f'  CNSD Consensus Pipeline Accuracy: {cwru_acc:.4f}')
     
-    # Treatment = CNN feature-norm (the notebook's 'vibration_energy'), confounder = load
+    # Treatment = CNN feature-norm ('vibration_energy' proxy), confounder = load
     cwru_treat = extract_feature_norms(cnn, X_train)
     causal_cwru = analyze_causal(cwru_treat, y_train, load_train, 'CWRU')
 
@@ -73,7 +73,7 @@ def main():
     print('\n' + '='*80)
     print('DOMAIN 2: NASA CMAPSS TURBOFAN EXPERIMENTS')
     print('='*80)
-    # Map back to classifications matching the target notebook evaluation layout
+    # CMAPSS RUL -> binary fault label (healthy vs degraded)
     cmapss_treat = compute_vibration_rms(X_train_cm)
     causal_cmapss = analyze_causal(cmapss_treat, y_train_cm_bin, op_train, 'CMAPSS')
 
@@ -123,11 +123,11 @@ def main():
     print('='*80)
     print('\n| Domain   | ATE       | 95% CI           | Placebo | p-value |')
     print('|----------|----------|------------------|---------|---------|')
-    print(f"| CWRU     | {causal_cwru['ate']:+.4f}  | [{causal_cwru['ci'][0]:+.4f}, {causal_cwru['ci'][1]:+.4f}] | {causal_cwru['placebo_ratio']:6.1f}× | {causal_cwru['p_value']:.4f}  |")
-    print(f"| CMAPSS   | {causal_cmapss['ate']:+.4f}  | [{causal_cmapss['ci'][0]:+.4f}, {causal_cmapss['ci'][1]:+.4f}] | {causal_cmapss['placebo_ratio']:6.1f}× | {causal_cmapss['p_value']:.4f}  |")
-    print(f"| MIT-BIH  | {causal_mitbih['ate']:+.4f}  | [{causal_mitbih['ci'][0]:+.4f}, {causal_mitbih['ci'][1]:+.4f}] | {causal_mitbih['placebo_ratio']:6.1f}× | {causal_mitbih['p_value']:.4f}  |")
+    print(f"| CWRU     | {causal_cwru['ate']:+.4f}  | [{causal_cwru['ci'][0]:+.4f}, {causal_cwru['ci'][1]:+.4f}] | {causal_cwru['placebo_ratio']:6.1f}x | {causal_cwru['p_value']:.4f}  |")
+    print(f"| CMAPSS   | {causal_cmapss['ate']:+.4f}  | [{causal_cmapss['ci'][0]:+.4f}, {causal_cmapss['ci'][1]:+.4f}] | {causal_cmapss['placebo_ratio']:6.1f}x | {causal_cmapss['p_value']:.4f}  |")
+    print(f"| MIT-BIH  | {causal_mitbih['ate']:+.4f}  | [{causal_mitbih['ci'][0]:+.4f}, {causal_mitbih['ci'][1]:+.4f}] | {causal_mitbih['placebo_ratio']:6.1f}x | {causal_mitbih['p_value']:.4f}  |")
     if causal_mfpt:
-        print(f"| MFPT     | {causal_mfpt['ate']:+.4f}  | [{causal_mfpt['ci'][0]:+.4f}, {causal_mfpt['ci'][1]:+.4f}] | {causal_mfpt['placebo_ratio']:6.1f}× | {causal_mfpt['p_value']:.4f}  |")
+        print(f"| MFPT     | {causal_mfpt['ate']:+.4f}  | [{causal_mfpt['ci'][0]:+.4f}, {causal_mfpt['ci'][1]:+.4f}] | {causal_mfpt['placebo_ratio']:6.1f}x | {causal_mfpt['p_value']:.4f}  |")
     
     print('='*80)
     
