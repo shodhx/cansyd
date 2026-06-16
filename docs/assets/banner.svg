@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 320" width="1200" height="320" role="img" aria-label="CNSD — Causal Neuro-Symbolic Diagnosis">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1120"/>
+      <stop offset="0.55" stop-color="#111c33"/>
+      <stop offset="1" stop-color="#0d1830"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#38bdf8"/>
+      <stop offset="0.5" stop-color="#818cf8"/>
+      <stop offset="1" stop-color="#34d399"/>
+    </linearGradient>
+    <linearGradient id="title" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#e2e8f0"/>
+      <stop offset="1" stop-color="#cbd5e1"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <style>
+      .t  { font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
+      .lbl{ font-family: "SFMono-Regular", "Consolas", "Liberation Mono", monospace; }
+    </style>
+  </defs>
+
+  <!-- background -->
+  <rect width="1200" height="320" rx="20" fill="url(#bg)"/>
+  <rect x="1.5" y="1.5" width="1197" height="317" rx="19" fill="none" stroke="#1e2b45" stroke-width="2"/>
+
+  <!-- faint signal trace, evoking vibration data -->
+  <polyline fill="none" stroke="#1f3a5f" stroke-width="2" opacity="0.6"
+    points="0,250 60,246 90,210 110,275 140,230 180,252 210,150 230,300 250,205 300,248 340,244 360,200 380,285 410,236 470,250 520,247 560,205 580,288 610,232 670,250 760,248 800,210 820,280 850,235 920,250 1010,247 1050,206 1075,286 1100,234 1200,250"/>
+
+  <!-- layered pipeline glyph -->
+  <g transform="translate(96,160)" filter="url(#soft)">
+    <circle r="60" fill="none" stroke="url(#accent)" stroke-width="2.5" opacity="0.9"/>
+    <circle r="42" fill="none" stroke="url(#accent)" stroke-width="2"   opacity="0.6"/>
+    <circle r="24" fill="none" stroke="url(#accent)" stroke-width="2"   opacity="0.4"/>
+    <circle r="6"  fill="url(#accent)"/>
+    <!-- three nodes = three rungs -->
+    <circle cx="0"   cy="-60" r="7" fill="#38bdf8"/>
+    <circle cx="52"  cy="30"  r="7" fill="#818cf8"/>
+    <circle cx="-52" cy="30"  r="7" fill="#34d399"/>
+    <line x1="0" y1="-60" x2="52"  y2="30" stroke="url(#accent)" stroke-width="1.5" opacity="0.5"/>
+    <line x1="52" y1="30" x2="-52" y2="30" stroke="url(#accent)" stroke-width="1.5" opacity="0.5"/>
+    <line x1="-52" y1="30" x2="0" y2="-60" stroke="url(#accent)" stroke-width="1.5" opacity="0.5"/>
+  </g>
+
+  <!-- wordmark -->
+  <text x="208" y="150" class="t" font-size="92" font-weight="700" fill="url(#title)" letter-spacing="2">CNSD</text>
+  <text x="212" y="196" class="t" font-size="29" font-weight="500" fill="#94a3b8" letter-spacing="0.5">Causal Neuro-Symbolic Diagnosis</text>
+
+  <!-- rung labels -->
+  <g class="lbl" font-size="15" fill="#64748b">
+    <text x="214" y="236">association</text>
+    <text x="332" y="236" fill="#475569">&#8594;</text>
+    <text x="356" y="236">intervention</text>
+    <text x="490" y="236" fill="#475569">&#8594;</text>
+    <text x="514" y="236">counterfactual</text>
+  </g>
+
+  <!-- accent underline -->
+  <rect x="214" y="252" width="446" height="3" rx="1.5" fill="url(#accent)" opacity="0.8"/>
+
+  <!-- right-side tag -->
+  <g transform="translate(980,128)">
+    <rect x="0" y="0" width="170" height="30" rx="15" fill="#0f1d35" stroke="#26344f" stroke-width="1"/>
+    <text x="85" y="20" class="lbl" font-size="13" fill="#7dd3fc" text-anchor="middle">Protocol B</text>
+    <rect x="0" y="40" width="170" height="30" rx="15" fill="#0f1d35" stroke="#26344f" stroke-width="1"/>
+    <text x="85" y="60" class="lbl" font-size="13" fill="#a5b4fc" text-anchor="middle">CWRU · CMAPSS · ECG</text>
+  </g>
+</svg>

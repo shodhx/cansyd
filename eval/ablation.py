@@ -45,12 +45,7 @@ def consensus_scores(preds, confs, feat_norms, severities, jepa_agrees, u_f, ate
 def run_ablation(y_test, preds, confs, feat_norms, severities, jepa_agrees, u_f, ate,
                  risk_midpoint, weights=DEFAULT_WEIGHTS):
     """
-    Five-config ablation (Protocol B). Expected:
-      Full CNSD (bidir)  acc 0.9909  reliable 0.9236  score 0.7667
-      Forward only       acc 0.9909  reliable 0.9100  score 0.7675
-      -Causal            acc 0.9909  reliable 0.6587  score 0.5623
-      -JEPA              acc 0.9909  reliable 0.9909  score 0.8128
-      CNN only           acc 0.9909  reliable 0.8051  score 0.6108
+    Five-config ablation (Protocol B).
     Accuracy is identical across rows by construction: ablation changes only the
     consensus score, never the CNN's predictions.
     """

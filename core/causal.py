@@ -67,7 +67,7 @@ def analyze_causal(treatment, fault, confounder, domain='CWRU'):
       treatment : CNN feature-norm (CWRU/ECG) or vibration RMS (MFPT).
       fault     : labels; binarised as (label > 0).
       confounder: operating load / condition.
-    Expected CWRU: ATE ~ -0.069, placebo > 100x, p < 0.001.
+    Returns the ATE with a bootstrap CI, permutation placebo ratio, and p-value.
     """
     fault = (np.asarray(fault) > 0).astype(int)
     treatment = np.asarray(treatment, float)
@@ -85,7 +85,7 @@ def analyze_causal(treatment, fault, confounder, domain='CWRU'):
 def cate_by_group(treatment, outcome, group_labels, confounder, n_boot=500, seed=42, min_n=30):
     """
     Conditional ATE per group. Outcome is logit(P(fault)) to avoid softmax saturation.
-    Expected: per-fault CATE spans ~-0.002..+0.562, variance ~0.042, all significant.
+    Reports the per-group CATE with a bootstrap CI and a heterogeneity summary.
     """
     rng = np.random.default_rng(seed)
     treatment = np.asarray(treatment, float)
@@ -123,8 +123,8 @@ def cate_by_group(treatment, outcome, group_labels, confounder, n_boot=500, seed
 def causal_invariance_across_loads(treatment, fault, loads):
     """
     Per-load ATE via simple OLS (a single load has no confounder variation).
-    Expected: ATE ~ -0.062..-0.074 across loads 0-3, CV ~ 0.066,
-    direction invariant (magnitude varies with operating condition).
+    Reports the per-load ATE and summarises whether the effect direction is
+    invariant across operating conditions (magnitude may vary).
     """
     fault = (np.asarray(fault) > 0).astype(int)
     treatment = np.asarray(treatment, float)

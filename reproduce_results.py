@@ -9,8 +9,7 @@ Phases:
   4. Call each evaluation module: classification, baselines, causal, ablation,
      calibration, continual learning
 
-This is a full GPU reproduction (Kaggle/Colab T4 is enough). Numbers should match
-the expected values within seed variance. See README.
+A GPU is recommended; the full pipeline runs comfortably on a single mid-range card.
 """
 import numpy as np
 import tensorflow as tf
@@ -130,7 +129,7 @@ def main():
     run_continual_comparison(X_train, y_train, X_test, y_test)
 
     print('\n' + '=' * 70)
-    print('Done. Compare printed tables against the README expected values.')
+    print('Reproduction complete.')
     print('=' * 70)
 
 if __name__ == '__main__':

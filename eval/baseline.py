@@ -65,10 +65,9 @@ def _train_baseline(builder, name, X_train, y_train, X_test, y_test, seeds=(42, 
 
 def run_published_baselines(X_train, y_train, X_test, y_test, seeds=(42, 43, 44)):
     """
-    Protocol B comparison. Expected:
-      WDCNN      0.8815 +/- 0.0046
-      TICNN      0.8720 +/- 0.0269
-      CNSD-WDCNN 0.8784 +/- 0.0063   (build_cnn backbone, no contrastive training)
+    Protocol B (cross-load) comparison of WDCNN, TICNN, and the CNSD backbone
+    (build_cnn, trained without contrastive regularization), reported as mean/std
+    weighted F1 across seeds.
     """
     print('=== PUBLISHED BASELINES (Protocol B - Cross-Load) ===')
     f1_wdcnn = _train_baseline(build_wdcnn, 'WDCNN', X_train, y_train, X_test, y_test, seeds)
@@ -124,7 +123,7 @@ def train_irm(X_tr, y_tr, loads_tr, X_te, y_te, lam_irm=1.0, epochs=60, seed=42)
     return f1_score(y_te, yp, average='weighted')
 
 def run_irm(X_train, y_train, loads_train, X_test, y_test, lambdas=(0.1, 1.0), seeds=(42, 43, 44)):
-    """Expected: best lambda=1.0 -> F1 = 0.8542 +/- 0.1029."""
+    """Sweeps the IRM penalty weight and reports F1 per lambda (best by mean)."""
     print('=== INVARIANT RISK MINIMIZATION (IRMv1) ===')
     print(f'{"Lambda":>10} {"F1_mean":>10} {"F1_std":>10} {"Seeds":>6}')
     print('-' * 40)

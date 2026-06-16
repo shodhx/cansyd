@@ -17,7 +17,7 @@ def expected_calibration_error(confidences, accuracies, n_bins=10):
 
 def run_ece(cnn_confs, cnsd_scores, correct):
     """
-    Expected: CNN softmax ECE=0.0015, CNSD bidirectional ECE=0.2242 (acc 0.9909).
+    Compares the Expected Calibration Error of the raw CNN softmax against the
     The CNSD consensus score is worse-calibrated than the raw softmax.
     """
     correct = np.asarray(correct, dtype=float)
@@ -35,8 +35,8 @@ def run_proposition1(feat_norms, ate, correct):
     """
     Proposition 1 check with a direction-invariant risk measure:
         risk = |abs(norm*ate) - median(abs(norm*ate))|
-    Expected: VIOLATED, rho=0.0356, p=0.1625. A stated limitation: causal
-    contrastive features don't make extreme risk predict error here.
+    Tests whether extreme (direction-invariant) causal risk predicts higher
+    classification error, via quartile error rates and a Spearman correlation.
     """
     feat_norms = np.asarray(feat_norms, dtype=float)
     correct = np.asarray(correct, dtype=int)

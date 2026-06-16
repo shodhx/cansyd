@@ -1,8 +1,6 @@
 <div align="center">
 
-# CNSD
-
-### Causal Neuro-Symbolic Diagnosis
+<img src="docs/assets/banner.svg" alt="CNSD — Causal Neuro-Symbolic Diagnosis" width="100%"/>
 
 *A five-layer bidirectional architecture for safety-critical fault diagnosis that*
 *operationalizes all three rungs of Pearl's causal hierarchy — association, intervention, and counterfactual.*

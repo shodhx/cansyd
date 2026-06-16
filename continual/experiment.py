@@ -2,13 +2,9 @@
 Continual-learning comparison.
 
 Base classes 0-6 are learned first; new classes 7-9 are added few-shot with
-2x replay. Four methods are compared (expected N=100/class results):
-
-    Method            Old_Acc  New_Acc  ATE_drift
-    Naive fine-tune    0.9351   0.9972   0.1151
-    EWC (best lambda)  0.9705   0.9860   0.1163
-    Standard LoRA      0.9410   0.8796   0.0000
-    Causal M. LoRA     0.8955   0.8627   0.0000
+2x replay. Four methods are compared on old-class accuracy, new-class accuracy,
+and causal ATE drift: naive fine-tuning, EWC, standard LoRA, and Causal Masked
+LoRA (CML).
 
 Frozen-backbone methods (LoRA, CML) have ATE_drift = 0 by construction, which is
 tautological for any frozen backbone. CCR-LoRA (partial adaptation, target
