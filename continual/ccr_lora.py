@@ -9,8 +9,8 @@ class LoRAAdapter(tf.keras.layers.Layer):
         self.rank = rank
     
     def build(self, input_shape):
-        self.A = self.add_weight('A', (self.dim, self.rank), initializer='glorot_uniform', trainable=True)
-        self.B = self.add_weight('B', (self.rank, self.dim), initializer='zeros', trainable=True)
+        self.A = self.add_weight(name='A', shape=(self.dim, self.rank), initializer='glorot_uniform', trainable=True)
+        self.B = self.add_weight(name='B', shape=(self.rank, self.dim), initializer='zeros', trainable=True)
         super().build(input_shape)
     
     def call(self, x):
