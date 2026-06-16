@@ -90,12 +90,19 @@ def main():
     res = analyze_causal(feat_norms_tr, y_train, load_train, 'CWRU')
     print(f"ATE={res['ate']:+.4f}  CI=[{res['ci'][0]:+.4f},{res['ci'][1]:+.4f}]  "
           f"placebo={res['placebo_ratio']:.1f}x  p={res['p_value']:.4f}")
-    # CATE on logit(P(fault)) over the combined set
-    fault_prob = 1.0 - probs[:, 0]
+
+    # CATE and invariance need ALL operating loads, so combine train (loads 0/1/2)
+    # with test (load 3) - matching the notebook's X_all_combined.
+    X_all = np.concatenate([X_train, X_test])
+    y_all = np.concatenate([y_train, y_test])
+    load_all = np.concatenate([load_train, load_test])
+    feat_all = np.concatenate([feat_norms_tr, feat_norms_te])
+    probs_all = cnn.predict(X_all, batch_size=64, verbose=0)
+    fault_prob_all = 1.0 - probs_all[:, 0]
     eps = 1e-6
-    fault_logit = np.log((fault_prob + eps) / (1.0 - fault_prob + eps))
-    cate_by_group(feat_norms_te, fault_logit, y_test, load_test)
-    causal_invariance_across_loads(feat_norms_te, y_test, load_test)
+    fault_logit_all = np.log((fault_prob_all + eps) / (1.0 - fault_prob_all + eps))
+    cate_by_group(feat_all, fault_logit_all, y_all, load_all)
+    causal_invariance_across_loads(feat_all, y_all, load_all)
 
     print('\n[4/6] ABLATION')
     run_ablation(y_test, preds, confs, feat_norms_te, severities, jepa_agrees,
