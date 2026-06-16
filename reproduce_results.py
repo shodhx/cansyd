@@ -19,7 +19,7 @@ from data.loaders import load_cwru_all
 from core.architecture import build_cnn, train_jepa_backbone, patchify
 from core.rules import rule_engine
 from core.causal import (analyze_causal, cate_by_group, causal_invariance_across_loads,
-                         extract_feature_norms)
+                         extract_feature_norms, signal_kurtosis)
 from eval.classification import train_cnn, evaluate_protocol_b
 from eval.baseline import run_published_baselines, run_irm
 from eval.ablation import run_ablation, consensus_scores
@@ -87,22 +87,33 @@ def main():
     run_irm(X_train, y_train, load_train, X_test, y_test)
 
     print('\n[3/6] CAUSAL ANALYSIS')
-    res = analyze_causal(feat_norms_tr, y_train, load_train, 'CWRU')
-    print(f"ATE={res['ate']:+.4f}  CI=[{res['ci'][0]:+.4f},{res['ci'][1]:+.4f}]  "
-          f"placebo={res['placebo_ratio']:.1f}x  p={res['p_value']:.4f}")
+    # Two treatments reported side by side:
+    #   (a) CNN feature-norm  - the notebook's estimand; learned, run-dependent (sign can flip).
+    #   (b) signal kurtosis   - physical, scale-invariant, deterministic -> reproducible ATE.
+    res_fn = analyze_causal(feat_norms_tr, y_train, load_train, 'CWRU')
+    kurt_tr = signal_kurtosis(X_train)
+    res_ph = analyze_causal(kurt_tr, y_train, load_train, 'CWRU')
+    print('Treatment            ATE        95% CI                 placebo    p')
+    print('-' * 70)
+    print(f"feature-norm (learned){res_fn['ate']:+.4f}   "
+          f"[{res_fn['ci'][0]:+.4f},{res_fn['ci'][1]:+.4f}]   "
+          f"{res_fn['placebo_ratio']:>6.1f}x   {res_fn['p_value']:.4f}")
+    print(f"kurtosis (physical)  {res_ph['ate']:+.4f}   "
+          f"[{res_ph['ci'][0]:+.4f},{res_ph['ci'][1]:+.4f}]   "
+          f"{res_ph['placebo_ratio']:>6.1f}x   {res_ph['p_value']:.4f}")
 
     # CATE and invariance need ALL operating loads, so combine train (loads 0/1/2)
-    # with test (load 3) - matching the notebook's X_all_combined.
+    # with test (load 3). Use the physical kurtosis treatment (stable/reproducible).
     X_all = np.concatenate([X_train, X_test])
     y_all = np.concatenate([y_train, y_test])
     load_all = np.concatenate([load_train, load_test])
-    feat_all = np.concatenate([feat_norms_tr, feat_norms_te])
+    kurt_all = signal_kurtosis(X_all)
     probs_all = cnn.predict(X_all, batch_size=64, verbose=0)
     fault_prob_all = 1.0 - probs_all[:, 0]
     eps = 1e-6
     fault_logit_all = np.log((fault_prob_all + eps) / (1.0 - fault_prob_all + eps))
-    cate_by_group(feat_all, fault_logit_all, y_all, load_all)
-    causal_invariance_across_loads(feat_all, y_all, load_all)
+    cate_by_group(kurt_all, fault_logit_all, y_all, load_all)
+    causal_invariance_across_loads(kurt_all, y_all, load_all)
 
     print('\n[4/6] ABLATION')
     run_ablation(y_test, preds, confs, feat_norms_te, severities, jepa_agrees,

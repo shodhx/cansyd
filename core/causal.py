@@ -7,8 +7,21 @@ def compute_vibration_rms(X):
     return np.sqrt(np.mean(X.reshape(len(X), -1) ** 2, axis=1))
 
 def feature_norm(features):
-    """CNN feature-norm treatment ('vibration_energy' proxy)."""
+    """CNN feature-norm treatment ('vibration_energy' proxy). Learned, run-dependent."""
     return np.linalg.norm(features, axis=1)
+
+def signal_kurtosis(X):
+    """
+    Signal kurtosis - the classic bearing-fault impulsiveness indicator.
+    Scale-invariant (survives the loader's per-segment normalization, unlike RMS)
+    and fully deterministic given the signal, so the resulting ATE is reproducible
+    across training runs - unlike the CNN feature-norm, which is model-dependent.
+    """
+    x = X.reshape(len(X), -1)
+    mu = x.mean(axis=1, keepdims=True)
+    sd = x.std(axis=1, keepdims=True) + 1e-8
+    z = (x - mu) / sd
+    return np.mean(z ** 4, axis=1)
 
 def extract_feature_norms(cnn, X, batch_size=128):
     """Build the penultimate-layer extractor (matching the pipeline) and return norms."""
