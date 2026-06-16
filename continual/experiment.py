@@ -52,7 +52,7 @@ def train_base(X_base_tr, y_base_tr, X_base_te, y_base_te, seed=42):
     lr = callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=5, min_lr=1e-5, verbose=0)
     base_cnn.fit(X_base_tr, y_base_tr, epochs=60, batch_size=64,
                  validation_split=0.15, callbacks=[es, lr], verbose=0)
-    base_feat = tf.keras.Model(inputs=base_cnn.layers[0].input, outputs=base_cnn.layers[-3].output)
+    base_feat = tf.keras.Model(inputs=base_cnn.input, outputs=base_cnn.layers[-3].output)
     for layer in base_feat.layers:
         layer.trainable = False
     ate_before = _ate(base_feat, X_base_te, y_base_te)
@@ -117,7 +117,7 @@ def _train_ewc(base_cnn, X_comb, y_comb, lam, epochs=30):
                 total = ce + lam * pen
             grads = tape.gradient(total, ewc.trainable_variables)
             opt.apply_gradients(zip(grads, ewc.trainable_variables))
-    ewc_feat = tf.keras.Model(inputs=ewc.layers[0].input, outputs=ewc.layers[-3].output)
+    ewc_feat = tf.keras.Model(inputs=ewc.input, outputs=ewc.layers[-3].output)
     return ewc, ewc_feat
 
 def run_continual_comparison(X_train, y_train, X_test, y_test, n_shots=(10, 50, 100),
@@ -159,7 +159,7 @@ def run_continual_comparison(X_train, y_train, X_test, y_test, n_shots=(10, 50, 
     # Naive
     naive = _build(10); _copy_base_weights(base_cnn, naive)
     naive.fit(X_c, y_c, epochs=15, batch_size=32, verbose=0)
-    naive_feat = tf.keras.Model(inputs=naive.layers[0].input, outputs=naive.layers[-3].output)
+    naive_feat = tf.keras.Model(inputs=naive.input, outputs=naive.layers[-3].output)
     naive_o, naive_n, naive_a = _evaluate(naive, X_base_te, y_base_te, X_new_te, y_new_te, naive_feat)
 
     # EWC sweep -> best by old_acc
