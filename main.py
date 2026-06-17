@@ -1,6 +1,7 @@
 # main.py
 def main():
     import numpy as np
+    import tensorflow as tf
     import os
     import sys
     
@@ -56,6 +57,8 @@ def main():
     print('DOMAIN 1: CWRU BEARING DATASET EXPERIMENTS')
     print('='*80)
     cnn = build_cnn(input_shape=(1024, 1), num_classes=10)
+    cnn.compile(optimizer=tf.keras.optimizers.Adam(0.001),
+                loss='sparse_categorical_crossentropy', metrics=['accuracy'])
     cnn.fit(X_train, y_train, epochs=20, batch_size=128, verbose=0, validation_split=0.1)
     
     # Initialize the complete 5-layer active neuro-symbolic feedback loop
@@ -81,6 +84,8 @@ def main():
     print('DOMAIN 3: MIT-BIH ARRHYTHMIA ECG EXPERIMENTS')
     print('='*80)
     cnn_ecg = build_cnn(input_shape=(256, 1), num_classes=5)
+    cnn_ecg.compile(optimizer=tf.keras.optimizers.Adam(0.001),
+                    loss='sparse_categorical_crossentropy', metrics=['accuracy'])
     cnn_ecg.fit(X_train_ecg, y_train_ecg, epochs=20, batch_size=128, verbose=0, validation_split=0.1)
     ecg_treat = extract_feature_norms(cnn_ecg, X_train_ecg)
     causal_mitbih = analyze_causal(ecg_treat, y_train_ecg, rr_train, 'MIT-BIH')
