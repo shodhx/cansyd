@@ -63,14 +63,15 @@ def main():
     for name, fn in TREATMENTS.items():
         t = fn(X)
         res = analyze_causal(t, y, loads, 'CWRU')
-        per_load, mean_ate, cv = causal_invariance_across_loads(t, y, loads)
-        signs = {np.sign(a) for a in per_load}
-        direction = 'invariant' if len(signs) == 1 else 'FLIPS'
+        rows, summary = causal_invariance_across_loads(t, y, loads)
+        cv = summary.get('ate_cv')
+        direction = 'invariant' if summary.get('direction_consistent') else 'FLIPS'
+        cv_str = f"{cv:9.3f}" if cv is not None else f"{'n/a':>9}"
         print(f"{name:18} {res['ate']:+10.4f} {res['p_value']:8.4f} "
-              f"{res['placebo_ratio']:8.1f}x {cv:9.3f} {direction:>10}")
-    print('\n(The most load-stable treatment is the')
+              f"{res['placebo_ratio']:8.1f}x {cv_str} {direction:>10}")
+    print('\n(Report this table verbatim. The most load-stable treatment is the')
     print(' one with smallest CV AND invariant direction - whatever it turns out')
-    print(' to be.)\n')
+    print(' to be. Do not reorder to favour a chosen treatment.)\n')
 
     # ---- Table 2: sensitivity of the kurtosis result ----
     # (kurtosis is the pre-registered primary treatment; we stress-test IT)
