@@ -20,25 +20,19 @@ def train_ccr_lora(base_model, X_new, y_new, ate_old, lam=1.0):
     Adapts late-stage layer weights via Low-Rank Adaptation matrices
     constrained by a soft Causal Consistency Regularization (CCR) penalty variable.
     """
-    # Freeze the base CNN layers to lock feature representations
-    for layer in base_model.layers[:-1]:
-        layer.trainable = False
+    # Freeze the base CNN so feature representations stay locked
+    feat_extractor = tf.keras.Model(inputs=base_model.input,
+                                    outputs=base_model.layers[-3].output)
+    feat_extractor.trainable = False
 
+    # New head: frozen features -> LoRA adapter -> classifier
     inp = tf.keras.Input(shape=base_model.input_shape[1:])
-    x = base_model.layers[0](inp)
-    for layer in base_model.layers[1:-3]:
-        x = layer(x)
-        
-    feat = base_model.layers[-3](x)
+    feat = feat_extractor(inp)
     lora_feat = LoRAAdapter(dim=feat.shape[-1], rank=4)(feat)
-    drop = base_model.layers[-2](lora_feat)
-    out = tf.keras.layers.Dense(len(np.unique(y_new)) + 1, activation='softmax')(drop)
-    
+    out = tf.keras.layers.Dense(len(np.unique(y_new)) + 1, activation='softmax')(lora_feat)
+
     ccr_model = tf.keras.Model(inp, out)
     optimizer = tf.keras.optimizers.Adam(0.001)
-    
-    # Isolate feature tracking subgraph
-    feat_extractor = tf.keras.Model(inputs=base_model.input, outputs=base_model.layers[-3].output)
     
     # Parameterized optimization loop
     for epoch in range(10):
