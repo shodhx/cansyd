@@ -2,6 +2,8 @@
 def main():
     import numpy as np
     import tensorflow as tf
+    np.random.seed(42)
+    tf.random.set_seed(42)
     import os
     import sys
     
@@ -109,7 +111,8 @@ def main():
     y_new = y_train[np.where(y_train >= 7)[0]] - 7
     
     ccr_model = train_ccr_lora(cnn, X_new, y_new, ate_old=causal_cwru['ate'], lam=1.0)
-    print(" -> Continual adaptation successful. Structural drift minimized.")
+    print(" -> CCR-LoRA adaptation complete (frozen backbone; not yet validated as "
+          "distinct from standard LoRA - the causal penalty does not currently affect training).")
 
     # ==================== PEARLIAN RUNG 3 COUNTERFACTUAL INTERVENTIONS ====================
     print('\n' + '='*80)
