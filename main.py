@@ -11,13 +11,13 @@ def main():
     print('='*80)
     print('   CNSD: CAUSAL-NEURO-SYMBOLIC DIAGNOSIS INTEGRATED REPRODUCTION ENGINE   ')
     print('='*80)
-    print('\nTreatment: Vibration RMS (physically meaningful)')
+    print('\nTreatment: per-domain physical signal feature')
     print('Confounders: Load / Operating Conditions / RR Interval\n')
     
     # Load foundational components from the unified core modules
     from data.loaders import load_cwru_all, load_cmapss, load_mitbih_split, load_mfpt
     from core.architecture import build_cnn, train_jepa_backbone, patchify
-    from core.causal import analyze_causal, extract_feature_norms, compute_vibration_rms
+    from core.causal import analyze_causal, signal_kurtosis
     from core.pipeline import CNSDPipeline
     from core.rules import rule_engine
     from core.counterfactual import generate_counterfactual
@@ -67,16 +67,18 @@ def main():
     cwru_acc = np.mean([1 if r['class'] == y_test[i] else 0 for i, r in enumerate(results_cwru)])
     print(f'  CNSD Consensus Pipeline Accuracy: {cwru_acc:.4f}')
     
-    # Treatment = CNN feature-norm ('vibration_energy' proxy), confounder = load
-    cwru_treat = extract_feature_norms(cnn, X_train)
+    # Treatment = signal kurtosis (impulsiveness), confounder = load
+    cwru_treat = signal_kurtosis(X_train)
     causal_cwru = analyze_causal(cwru_treat, y_train, load_train, 'CWRU')
 
     # ---- DOMAIN 2: NASA CMAPSS ----
     print('\n' + '='*80)
     print('DOMAIN 2: NASA CMAPSS TURBOFAN EXPERIMENTS')
     print('='*80)
-    # CMAPSS RUL -> binary fault label (healthy vs degraded)
-    cmapss_treat = compute_vibration_rms(X_train_cm)
+    # Treatment = sensor s4 (HPC outlet temperature, an HPC-degradation indicator
+    # matching FD001's fault mode); confounder = operating condition.
+    # Columns of X_train_cm are s2..s21, so s4 is index 2.
+    cmapss_treat = X_train_cm[:, 2]
     causal_cmapss = analyze_causal(cmapss_treat, y_train_cm_bin, op_train, 'CMAPSS')
 
     # ---- DOMAIN 3: MIT-BIH ----
@@ -87,14 +89,14 @@ def main():
     cnn_ecg.compile(optimizer=tf.keras.optimizers.Adam(0.001),
                     loss='sparse_categorical_crossentropy', metrics=['accuracy'])
     cnn_ecg.fit(X_train_ecg, y_train_ecg, epochs=20, batch_size=128, verbose=0, validation_split=0.1)
-    ecg_treat = extract_feature_norms(cnn_ecg, X_train_ecg)
+    ecg_treat = signal_kurtosis(X_train_ecg)
     causal_mitbih = analyze_causal(ecg_treat, y_train_ecg, rr_train, 'MIT-BIH')
 
     # ---- DOMAIN 4: MFPT ----
     print('\n' + '='*80)
     print('DOMAIN 4: MFPT BEARING EXPERIMENTS')
     print('='*80)
-    mfpt_treat = compute_vibration_rms(X_train_mfpt)
+    mfpt_treat = signal_kurtosis(X_train_mfpt)
     causal_mfpt = analyze_causal(mfpt_treat, y_train_mfpt, rpm_train, 'MFPT')
 
     # ==================== CONTINUAL LEARNING MECHANICS ====================
