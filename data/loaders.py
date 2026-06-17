@@ -1,13 +1,11 @@
 import time
 import os
-import glob
-import urllib.request
 import requests
 import scipy.io
 import numpy as np
 import pandas as pd
 
-# Absolute runtime directory constraints matching configs/default.yaml
+# Local cache directories for the raw datasets
 BASE_DIR   = './data/raw'
 CWRU_DIR   = f'{BASE_DIR}/cwru'
 CMAPSS_DIR = f'{BASE_DIR}/cmapss'
@@ -119,7 +117,7 @@ def load_cwru_all(train_loads=(0,1,2), test_loads=(3,)):
 # ── 2. NASA CMAPSS LOADER ──
 def load_cmapss():
     try:
-        # Read from the cached data dir (configs/default.yaml -> data/raw/cmapss).
+        # Read from the local cache dir (data/raw/cmapss).
         df_train = pd.read_csv(f'{CMAPSS_DIR}/train_FD001.txt', sep=' ', header=None)
         df_train.drop(df_train.columns[[26, 27]], axis=1, inplace=True)
         df_train.columns = ['unit', 'cycle', 'op1', 'op2', 'op3'] + [f's{i}' for i in range(1, 22)]

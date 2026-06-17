@@ -1,6 +1,5 @@
 import tensorflow as tf
 import numpy as np
-from core.architecture import build_cnn
 
 class LoRAAdapter(tf.keras.layers.Layer):
     def __init__(self, dim, rank=4, **kwargs):

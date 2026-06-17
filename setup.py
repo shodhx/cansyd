@@ -11,6 +11,11 @@ setup(
         'pandas>=2.0.3',
         'scikit-learn>=1.3.0',
         'wfdb>=4.1.0',
+        'requests>=2.31.0',
     ],
-    python_requires='>=3.8',
+    python_requires='>=3.9',
+    author='Abhimanyu Prasad',
+    description='Causal Neuro-Symbolic Diagnosis: a five-layer bidirectional fault-diagnosis pipeline spanning association, intervention, and counterfactual reasoning.',
+    url='https://github.com/abhiprd2000/CNSD',
+    license='MIT',
 )

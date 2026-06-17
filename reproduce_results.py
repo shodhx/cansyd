@@ -12,10 +12,9 @@ Phases:
 A GPU is recommended; the full pipeline runs comfortably on a single mid-range card.
 """
 import numpy as np
-import tensorflow as tf
 
 from data.loaders import load_cwru_all
-from core.architecture import build_cnn, train_jepa_backbone, patchify
+from core.architecture import train_jepa_backbone, patchify
 from core.rules import rule_engine
 from core.causal import (analyze_causal, cate_by_group, causal_invariance_across_loads,
                          extract_feature_norms, signal_kurtosis)
@@ -87,7 +86,7 @@ def main():
 
     print('\n[3/6] CAUSAL ANALYSIS')
     # Two treatments reported side by side:
-    #   (a) CNN feature-norm  - the notebook's estimand; learned, run-dependent (sign can flip).
+    #   (a) CNN feature-norm  - a learned quantity; run-dependent (the sign can flip).
     #   (b) signal kurtosis   - physical, scale-invariant, deterministic -> reproducible ATE.
     res_fn = analyze_causal(feat_norms_tr, y_train, load_train, 'CWRU')
     kurt_tr = signal_kurtosis(X_train)

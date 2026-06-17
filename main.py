@@ -1,7 +1,6 @@
 # main.py
 def main():
     import numpy as np
-    import tensorflow as tf
     import os
     import sys
     
