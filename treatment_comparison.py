@@ -104,7 +104,32 @@ def main():
         m = loads != held
         r = analyze_causal(t[m], y[m], loads[m], 'CWRU')
         print(f"    exclude load {held}: ATE={r['ate']:+.4f}  p={r['p_value']:.4f}")
-    print("\n  (Stable ATE across these exclusions = robust. Report all rows.)")
+    # ---- Table 3: descriptor correlation matrix ----
+    # A reviewer will ask whether the five descriptors are independent. We report
+    # their pairwise Pearson correlation directly, whatever it shows. Highly
+    # correlated descriptors are NOT independent confirmations - we must say so.
+    print('\n' + '=' * 70)
+    print('DESCRIPTOR CORRELATION MATRIX (are the five treatments independent?)')
+    print('=' * 70)
+    names = list(TREATMENTS.keys())
+    mat = np.column_stack([standardize(TREATMENTS[n](X)) for n in names])
+    corr = np.corrcoef(mat, rowvar=False)
+    print(f"{'':16}" + ''.join(f"{n[:8]:>10}" for n in names))
+    for i, n in enumerate(names):
+        print(f"{n:16}" + ''.join(f"{corr[i,j]:>10.3f}" for j in range(len(names))))
+    # flag strong correlations honestly
+    print("\nStrong pairwise correlations (|r| > 0.7):")
+    flagged = False
+    for i in range(len(names)):
+        for j in range(i + 1, len(names)):
+            if abs(corr[i, j]) > 0.7:
+                print(f"  {names[i]} <-> {names[j]}: r = {corr[i,j]:+.3f}")
+                flagged = True
+    if not flagged:
+        print("  none - descriptors are largely independent")
+    print("\n(Report this matrix. If descriptors are highly correlated, state that")
+    print(" the consistency is robustness across related physical views, NOT five")
+    print(" independent tests. Do not claim independence the data does not support.)")
 
 
 if __name__ == '__main__':
