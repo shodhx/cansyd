@@ -57,11 +57,20 @@ def main():
     print(f'Samples: {len(X)} across loads {sorted(set(loads.tolist()))}\n')
 
     # ---- Table 1: ATE + cross-load stability (CV) for every treatment ----
-    print(f"{'Treatment':18} {'ATE':>10} {'p':>8} {'placebo':>9} "
+    # Each treatment is STANDARDIZED to unit variance first, so every ATE is a
+    # per-standard-deviation effect and CVs are compared on equal footing
+    # (this removes the scale artifact whereby a large-magnitude treatment such
+    # as raw RMS gets an unfairly small CV). Decided as the fair comparison
+    # metric; we report whatever it shows.
+    def standardize(v):
+        v = np.asarray(v, float)
+        return (v - v.mean()) / (v.std() + 1e-12)
+
+    print(f"{'Treatment':18} {'ATE/SD':>10} {'p':>8} {'placebo':>9} "
           f"{'CV(load)':>9} {'direction':>10}")
     print('-' * 70)
     for name, fn in TREATMENTS.items():
-        t = fn(X)
+        t = standardize(fn(X))
         res = analyze_causal(t, y, loads, 'CWRU')
         rows, summary = causal_invariance_across_loads(t, y, loads)
         cv = summary.get('ate_cv')
