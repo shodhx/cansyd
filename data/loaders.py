@@ -162,8 +162,8 @@ def load_mitbih_split(record_ids, seg_len=256):
     
     for rid in record_ids:
         try:
-            rec = wfdb.rdrecord(f'mitdb/{rid}', pn_dir='mitdb')
-            ann = wfdb.rdann(f'mitdb/{rid}', 'atr', pn_dir='mitdb')
+            rec = wfdb.rdrecord(str(rid), pn_dir='mitdb')
+            ann = wfdb.rdann(str(rid), 'atr', pn_dir='mitdb')
         except Exception:
             try:
                 rec = wfdb.rdrecord(str(rid))
