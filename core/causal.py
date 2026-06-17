@@ -3,7 +3,7 @@ import numpy as np
 # ── Treatments ──────────────────────────────────────────────────────────────
 
 def compute_vibration_rms(X):
-    """Raw-signal RMS energy. Used for the counterfactual layer and MFPT."""
+    """Raw-signal RMS energy."""
     return np.sqrt(np.mean(X.reshape(len(X), -1) ** 2, axis=1))
 
 def feature_norm(features):
@@ -64,7 +64,7 @@ def placebo_test(treatment, fault, confounder, n_perm=1000, seed=42):
 def analyze_causal(treatment, fault, confounder, domain='CWRU'):
     """
     Backdoor-adjusted ATE with bootstrap CI + permutation placebo test.
-      treatment : CNN feature-norm (CWRU/ECG) or vibration RMS (MFPT).
+      treatment : a physically grounded signal descriptor (e.g. kurtosis, RMS).
       fault     : labels; binarised as (label > 0).
       confounder: operating load / condition.
     Returns the ATE with a bootstrap CI, permutation placebo ratio, and p-value.
