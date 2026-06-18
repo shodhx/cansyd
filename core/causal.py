@@ -1,3 +1,18 @@
+"""
+causal.py - CNSD causal layer (Pearl Rung 2, honest framing).
+
+The structural model is stated in core/scm.py: there is NO causal arrow from
+vibration to fault. The manipulable variable is the operating condition Z, and
+the well-posed interventional quantity is the effect of Z on fault manifestation,
+estimated by backdoor adjustment and tested for INVARIANCE across conditions.
+
+The functions below estimate backdoor-adjusted associations between a physically
+grounded signal descriptor and the (binarised) fault label, controlling for
+operating condition, with bootstrap CIs and permutation placebo tests. These are
+reported as measurement-purification / partial-association quantities, NOT as
+"vibration causes fault" effects. The interventional do(Z) contrast is provided
+by intervention_effect_of_condition().
+"""
 import numpy as np
 
 # ── Treatments ──────────────────────────────────────────────────────────────
@@ -153,3 +168,31 @@ def causal_invariance_across_loads(treatment, fault, loads):
         print(f'\nATE mean={mean:.4f} std={std:.4f} CV={cv:.4f}  '
               f'direction {"INVARIANT" if same_dir else "VARIES"} across loads')
     return rows, summary
+
+
+# ── Rung 2: interventional effect of operating condition (the honest do-op) ──
+
+def intervention_effect_of_condition(fault, condition, n_perm=1000, seed=42):
+    """Estimate the effect of operating condition Z on fault manifestation.
+
+    Z (load/speed) is physically manipulable, so contrasting fault rates across
+    conditions is a genuine Rung-2 interventional quantity, E[Y | do(Z=a)] vs
+    E[Y | do(Z=b)], identified here under the SCM in core/scm.py (no instrument,
+    no backwards arrow). Returns the per-condition fault rate, the max pairwise
+    contrast, and a permutation p-value for whether condition affects the rate.
+    """
+    fault = (np.asarray(fault) > 0).astype(int)
+    condition = np.asarray(condition)
+    conds = sorted(np.unique(condition))
+    rates = {int(c): float(fault[condition == c].mean()) for c in conds}
+    vals = list(rates.values())
+    contrast = max(vals) - min(vals)
+    rng = np.random.default_rng(seed)
+    null = []
+    for _ in range(n_perm):
+        perm = rng.permutation(condition)
+        r = [fault[perm == c].mean() for c in conds]
+        null.append(max(r) - min(r))
+    p_val = float(np.mean(np.asarray(null) >= contrast))
+    return {'per_condition_fault_rate': rates, 'max_contrast': float(contrast),
+            'p_value': p_val, 'rung': 2}

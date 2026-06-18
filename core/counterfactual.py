@@ -1,53 +1,37 @@
-import numpy as np
-from core.causal import compute_vibration_rms
+"""
+counterfactual.py - DEPRECATED Rung-3 framing; delegates to honest sensitivity.
 
-def generate_counterfactual(X_sample, y_actual, load_actual, load_counterfactual, structural_coefficients=None):
+This module previously claimed to perform Pearl's Rung-3 abduction-action-
+prediction. That was an overclaim (residual extraction under a linear model is
+not structural abduction). It now delegates to core.sensitivity.local_sensitivity
+and is kept only so existing callers do not break. New code should call
+local_sensitivity directly and describe it as a local sensitivity analysis.
+"""
+from core.sensitivity import local_sensitivity
+
+
+def generate_counterfactual(X_sample, y_actual, load_actual, load_counterfactual,
+                            structural_coefficients=None):
+    """Backward-compatible shim. Returns a local sensitivity result, NOT a
+    Pearl-type counterfactual. The keys mirror the old structure where sensible
+    but the framing is corrected.
     """
-    Executes sample-specific structural Abduction-Action-Prediction 
-    (Judea Pearl's Causal Hierarchy Rung 3) to infer unit-level risk adjustments.
-    """
-    if structural_coefficients is None:
-        # Structural coefficients for the abduction-action-prediction step
-        structural_coefficients = {'alpha': 0.05, 'beta': 0.8}
-        
-    # Extract continuous physical metrics
-    vibration = compute_vibration_rms(X_sample.reshape(1, -1))[0]
-    actual_fault = int(y_actual > 0)
-    
-    # --- STEP 1: ABDUCTION ---
-    # Isolate the unique background exogenous noise (U) for this specific machine unit
-    u_vibration = vibration - (structural_coefficients['alpha'] * load_actual)
-    
-    # --- STEP 2: ACTION (Intervention via Do-Calculus) ---
-    # Enforce a hard structural change: set operating load to the counterfactual target
-    cf_vibration = (structural_coefficients['alpha'] * load_counterfactual) + u_vibration
-    
-    # --- STEP 3: PREDICTION ---
-    # Propagate the counterfactual telemetry forward through the logistic response mapping
-    actual_latent_score = structural_coefficients['beta'] * vibration
-    actual_fault_prob = 1.0 / (1.0 + np.exp(-actual_latent_score))
-    
-    cf_latent_score = structural_coefficients['beta'] * cf_vibration
-    cf_fault_prob = 1.0 / (1.0 + np.exp(-cf_latent_score))
-    
-    prob_change = cf_fault_prob - actual_fault_prob
-    
+    slope = (structural_coefficients or {}).get('beta', 0.8)
+    coupling = (structural_coefficients or {}).get('alpha', 0.05)
+    s = local_sensitivity(X_sample, load_actual, load_counterfactual,
+                          response_slope=slope, condition_coupling=coupling)
     return {
-        'actual': {
-            'load': float(load_actual),
-            'vibration_rms': float(vibration),
-            'fault': actual_fault,
-            'fault_prob': float(actual_fault_prob)
-        },
-        'counterfactual': {
-            'load': float(load_counterfactual),
-            'vibration_rms': float(cf_vibration),
-            'estimated_fault_prob_change': float(prob_change),
-            'cf_fault_prob': float(cf_fault_prob)
-        },
+        'actual': {'load': float(load_actual), 'predicted_prob': s['predicted_prob']},
+        'perturbed': {'load': float(load_counterfactual),
+                      'predicted_prob': s['perturbed_prob'],
+                      'prob_change': s['prob_change']},
+        'sensitivity': s['sensitivity'],
+        'framing': 'local sensitivity analysis (NOT Pearl Rung 3)',
         'explanation': (
-            f"If operational load were altered to {load_counterfactual} instead of {load_actual}, "
-            f"structural vibration would adjust to {cf_vibration:.3f}, shifting "
-            f"individual fault probability by {prob_change:+.4f}."
-        )
+            f"Under a linear response assumption, perturbing operating condition "
+            f"from {load_actual} to {load_counterfactual} changes the predicted "
+            f"fault probability by {s['prob_change']:+.4f} (sensitivity "
+            f"{s['sensitivity']:.3f}). This is a robustness probe, not a "
+            f"structural counterfactual."
+        ),
     }
