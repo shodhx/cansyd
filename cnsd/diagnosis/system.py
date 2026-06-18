@@ -76,4 +76,5 @@ class CNSD:
         """Rung-3 counterfactual for one unit (sensitivity fallback w/o DoWhy)."""
         feat = signal_kurtosis(data.X[unit_index:unit_index+1])[0]
         return what_if(feat, data.cond[unit_index], condition_cf,
-                       scm=self.scm, X_sample=data.X[unit_index].flatten())
+                       scm=self.scm, X_sample=data.X[unit_index].flatten(),
+                       factual_y=(data.y[unit_index] > 0))

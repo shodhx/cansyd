@@ -49,7 +49,8 @@ def refute_condition_effect(condition, fault, extra_confounders=None):
     # any measured confounders are common causes of Z and Y.
     graph_edges = ['Z -> Y'] + [f'{c} -> Z' for c in confs] + [f'{c} -> Y' for c in confs]
     model = CausalModel(data=df, treatment='Z', outcome='Y',
-                        common_causes=confs if confs else None)
+                        common_causes=confs if confs else None,
+                        graph='\n'.join(graph_edges))
     estimand = model.identify_effect(proceed_when_unidentifiable=True)
     estimate = model.estimate_effect(
         estimand, method_name='backdoor.linear_regression')
