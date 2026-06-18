@@ -48,6 +48,7 @@ class CNSDPipeline:
                 status = 'UNCERTAIN'          # inconclusive physical evidence
 
             results.append({
+                'root_cause': diag['root_cause'],          # the headline: what caused it
                 'cnn_class': diag['cnn_class'],
                 'cnn_confidence': float(cnn_conf[i]),
                 'diagnosis': diag['cnn_family'],

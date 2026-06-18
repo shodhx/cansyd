@@ -52,6 +52,36 @@ ACTIONS = {
 }
 
 
+
+# Physical root cause per fault family: the mechanism and the characteristic
+# frequency whose presence in the envelope spectrum is the EVIDENCE for it.
+ROOT_CAUSE = {
+    'Outer Race': {
+        'mechanism': 'a defect (spall/pit) on the stationary outer race; each '
+                     'rolling element striking it produces an impulse',
+        'evidence_freq': 'BPFO',
+        'component': 'outer race',
+    },
+    'Inner Race': {
+        'mechanism': 'a defect on the rotating inner race, amplitude-modulated '
+                     'by shaft rotation as the defect enters/exits the load zone',
+        'evidence_freq': 'BPFI',
+        'component': 'inner race',
+    },
+    'Ball': {
+        'mechanism': 'a defect on a rolling element, striking both races as it '
+                     'spins',
+        'evidence_freq': 'BSF',
+        'component': 'rolling element',
+    },
+    'Normal': {
+        'mechanism': 'no localized defect; vibration is broadband bearing/'
+                     'structural noise with no dominant characteristic frequency',
+        'evidence_freq': None,
+        'component': None,
+    },
+}
+
 class PhysicsRuleEngine:
     """Independent physics verification of a neural fault prediction."""
 
@@ -110,7 +140,39 @@ class PhysicsRuleEngine:
         severity = SEVERITY.get(size, 'None') if size else 'None'
         action = ACTIONS.get((family, severity if size else None),
                              'Review manually.')
+
+        # ── ROOT CAUSE (the headline CNSD output) ───────────────────────────
+        # The cause is named from the PHYSICAL EVIDENCE, not the CNN label: the
+        # dominant characteristic frequency identifies the defective component.
+        # When physics is inconclusive we report the cause as unconfirmed.
+        if verdict == 'CONFIRMED' and family == 'Normal':
+            cause_family = 'Normal'
+            cause_confidence = 'physically confirmed'
+        elif phys_strength >= self.tau:
+            cause_family = phys_family          # physics names the cause
+            cause_confidence = ('physically confirmed' if verdict == 'CONFIRMED'
+                                else 'physics-indicated (conflicts with network)')
+        else:
+            cause_family = family if family != 'Unknown' else None
+            cause_confidence = 'unconfirmed (weak physical evidence)'
+
+        rc = ROOT_CAUSE.get(cause_family, {})
+        ev_freq_name = rc.get('evidence_freq')
+        ev_freq_hz = evidence['freqs_hz'].get(ev_freq_name) if ev_freq_name else None
+        root_cause = {
+            'component': rc.get('component'),
+            'fault_type': cause_family,
+            'mechanism': rc.get('mechanism'),
+            'evidence_frequency': ev_freq_name,
+            'evidence_frequency_hz': ev_freq_hz,
+            'evidence_strength': float(phys_strength),
+            'confidence': cause_confidence,
+            'statement': self._root_cause_statement(cause_family, ev_freq_name,
+                                                    ev_freq_hz, phys_strength,
+                                                    cause_confidence, rc),
+        }
         return {
+            'root_cause': root_cause,
             'cnn_class': int(cnn_class),
             'cnn_family': family,
             'defect_size_in': size,
@@ -124,6 +186,23 @@ class PhysicsRuleEngine:
             'explanation': self._explain(family, phys_family, phys_strength,
                                          verdict, evidence['freqs_hz']),
         }
+
+    def _root_cause_statement(self, family, freq_name, freq_hz, strength,
+                              confidence, rc):
+        """One-line, human-readable root cause - the diagnosis an engineer wants."""
+        if family == 'Normal':
+            return ("ROOT CAUSE: none - no localized bearing defect detected; "
+                    "vibration is consistent with a healthy bearing.")
+        if family is None:
+            return ("ROOT CAUSE: undetermined - the network named a fault but no "
+                    "characteristic frequency is prominent enough to localize it.")
+        comp = rc.get('component', family)
+        if freq_hz is not None:
+            return (f"ROOT CAUSE: defect on the {comp} ({family}), evidenced by a "
+                    f"prominent peak at the {freq_name} ({freq_hz:.1f} Hz, "
+                    f"strength {strength:.1f}). Mechanism: {rc.get('mechanism','')}. "
+                    f"[{confidence}]")
+        return (f"ROOT CAUSE: {family} defect on the {comp} [{confidence}].")
 
     def _explain(self, cnn_family, phys_family, strength, verdict, freqs):
         if verdict == 'CONFIRMED' and cnn_family == 'Normal':

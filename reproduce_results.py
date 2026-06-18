@@ -89,7 +89,7 @@ def main():
         print(f"  class={r['cnn_class']} ({r['diagnosis']}, {r['severity']}) "
               f"conf={r['cnn_confidence']:.2f} | verdict={r['physics_verdict']} "
               f"| status={r['status']}")
-        print(f"    {r['explanation']}")
+        print(f"    {r['root_cause']['statement']}")
 
     # ── Phase 4: Layer 3 - honest causal analysis ───────────────────────────
     print('\n[2/6] CLASSIFICATION (Protocol B)')
@@ -108,6 +108,19 @@ def main():
     print(f"  do(Z) effect of operating condition on fault rate: "
           f"max contrast={doZ['max_contrast']:.4f}  p={doZ['p_value']:.4f}")
     print(f"  per-condition fault rate: {doZ['per_condition_fault_rate']}")
+
+    # optional DoWhy identification + refutation suite (graceful if not installed)
+    from core.dowhy_refutation import refute_condition_effect, dowhy_available
+    print(f"\n  DoWhy refutation suite ({'available' if dowhy_available() else 'not installed - using builtin'}):")
+    ref = refute_condition_effect(load_all, y_all)
+    if ref['backend'] == 'dowhy':
+        print(f"    estimate: {ref['estimate']:+.4f}")
+        for name, r in ref['refutations'].items():
+            ne = r.get('new_effect')
+            print(f"    refute[{name}]: new_effect={ne:+.4f}" if ne == ne else f"    refute[{name}]: {r.get('error','')}")
+    else:
+        print(f"    builtin placebo: p={ref['placebo_p_value']:.4f} ratio={ref['placebo_ratio']:.1f}x")
+        print(f"    ({ref['note']})")
 
     # (b) physical vs learned treatment (why physical is reproducible)
     feat_norms_tr = extract_feature_norms(cnn, X_train)
