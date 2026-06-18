@@ -3,19 +3,14 @@ from setuptools import setup, find_packages
 setup(
     name='cnsd',
     version='1.0.0',
+    description='Causal Neuro-Symbolic Diagnosis - a five-layer '
+                'fault-diagnosis system for rotating machinery',
     packages=find_packages(),
-    install_requires=[
-        'tensorflow>=2.15.0',
-        'numpy>=1.24.3',
-        'scipy>=1.11.3',
-        'pandas>=2.0.3',
-        'scikit-learn>=1.3.0',
-        'wfdb>=4.1.0',
-        'requests>=2.31.0',
-    ],
     python_requires='>=3.9',
-    author='Abhimanyu Prasad',
-    description='Causal Neuro-Symbolic Diagnosis: a neuro-symbolic fault-diagnosis pipeline with physics-grounded symbolic verification and Rung-2 causal analysis (Rung 3 reported as sensitivity analysis).',
-    url='https://github.com/abhiprd2000/CNSD',
-    license='MIT',
+    install_requires=['numpy', 'scipy', 'scikit-learn'],
+    extras_require={
+        'perception': ['tensorflow>=2.10'],   # Layer 1 (CNN) backend
+        'counterfactual': ['dowhy>=0.11', 'pandas', 'networkx'],  # Rung 3
+        'all': ['tensorflow>=2.10', 'dowhy>=0.11', 'pandas', 'networkx'],
+    },
 )

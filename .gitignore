@@ -1,7 +1,0 @@
-__pycache__/
-*.pyc
-*.mat
-cwru/
-mitdb/
-*.h5
-*.weights.h5
