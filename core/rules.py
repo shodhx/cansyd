@@ -19,7 +19,7 @@ which only checked the CNN's feature-norm against itself.
 import numpy as np
 from core.envelope import (
     fault_frequency_evidence, characteristic_frequencies,
-    CWRU_LOAD_RPM, CWRU_FS,
+    envelope_spectrum, band_energy, CWRU_LOAD_RPM, CWRU_FS, BEARING_6205,
 )
 
 # CWRU 10-class taxonomy -> (fault family, defect size). Family drives the
@@ -55,11 +55,25 @@ ACTIONS = {
 class PhysicsRuleEngine:
     """Independent physics verification of a neural fault prediction."""
 
-    def __init__(self, prominence_threshold=PROMINENCE_THRESHOLD,
+    def __init__(self, prominence_threshold=PROMINENCE_THRESHOLD, physics=None,
                  load_rpm=None, fs=CWRU_FS):
+        """physics: an optional PhysicsConfig (bearing geometry + cond->rpm map +
+        fs). When provided, the engine verifies against that dataset's
+        characteristic frequencies. When None, it falls back to geometry-free
+        verification (impulsiveness/energy at the dominant envelope peak), so the
+        engine still runs on ANY vibration dataset - it just cannot name the
+        specific fault frequency without geometry."""
         self.tau = prominence_threshold
-        self.load_rpm = load_rpm or CWRU_LOAD_RPM
-        self.fs = fs
+        if physics is not None:
+            self.bearing = physics.bearing
+            self.load_rpm = physics.cond_to_rpm
+            self.fs = physics.fs
+            self.geometry_free = False
+        else:
+            self.bearing = BEARING_6205
+            self.load_rpm = load_rpm or CWRU_LOAD_RPM
+            self.fs = fs
+            self.geometry_free = physics is None and load_rpm is None
 
     def diagnose(self, signal, cnn_class, load):
         """Produce an auditable, physics-checked diagnosis for one window.
@@ -68,8 +82,8 @@ class PhysicsRuleEngine:
         cnn_class : the CNN's predicted class (0..9)
         load      : operating load (maps to shaft rpm)
         """
-        rpm = self.load_rpm.get(int(load), 1797)
-        evidence = fault_frequency_evidence(signal, rpm, fs=self.fs)
+        rpm = self.load_rpm.get(int(load), next(iter(self.load_rpm.values())))
+        evidence = fault_frequency_evidence(signal, rpm, fs=self.fs, bearing=self.bearing)
         family, size = CWRU_CLASSES.get(int(cnn_class), ('Unknown', None))
 
         # which fault family does the PHYSICS most support?

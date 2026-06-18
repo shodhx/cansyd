@@ -63,3 +63,17 @@ class CNSDPipeline:
 
         self.last_conflict_rate = n_conflict / max(len(X), 1)
         return results
+
+    @classmethod
+    def for_dataset(cls, cnn, jepa_probe, encoder, patchify_fn, dataset,
+                    conf_thresh=0.90):
+        """Build a pipeline whose symbolic layer is configured for THIS dataset's
+        physics (or geometry-free if the dataset has none). This is how CNSD
+        adapts to an arbitrary dataset without any dataset-specific code."""
+        from core.rules import PhysicsRuleEngine
+        engine = PhysicsRuleEngine(physics=dataset.physics)
+        return cls(cnn, jepa_probe, encoder, patchify_fn, engine, conf_thresh)
+
+    def predict_dataset(self, dataset):
+        """Run the full pipeline on a universal Dataset object."""
+        return self.predict(dataset.X, dataset.cond)
