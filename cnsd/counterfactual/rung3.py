@@ -68,15 +68,15 @@ def counterfactual_for_unit(scm, observed_row, condition_cf):
 
 
 def what_if(signal_feature_value, condition_actual, condition_cf,
-            scm=None, X_sample=None):
+            scm=None, X_sample=None, factual_y=0.0):
     """Unified entry point. Uses the REAL Rung-3 counterfactual when a fitted SCM
     is provided (and DoWhy is available); otherwise falls back to the honest
     local-sensitivity analysis and labels itself as such.
     """
     if scm is not None and dowhy_gcm_available():
         row = {'Z': float(condition_actual), 'X': float(signal_feature_value),
-               'Y': 0.0}  # Y filled by abduction; placeholder for the frame
-        # abduction recovers noise from Z,X; Y is recomputed counterfactually
+               'Y': float(factual_y)}  # Y filled by abduction; requires factual observation
+        # abduction recovers noise from Z,X,Y; Y is recomputed counterfactually
         return counterfactual_for_unit(scm, row, condition_cf)
 
     # fallback - NOT Rung 3
