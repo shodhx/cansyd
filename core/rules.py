@@ -1,63 +1,139 @@
-class BearingRule:
-    def __init__(self, ref_norm=15.18, low_frac=0.8, high_frac=1.2):
-        """
-        Symbolic Logic Layer enforcing physical consistency guardrails
-        between stochastic latent embeddings and domain physics rules.
+"""
+rules.py - Physics-grounded symbolic verification layer.
 
-        Severity is graded *relative* to the calibrated median feature-norm
-        (calibrated median feature-norm = 15.18). CWRU feature norms sit
-        around 15, so the old absolute 0.3 / 0.6 thresholds quantised every
-        sample as 'High' and vetoed every Normal prediction.
-        """
-        self.sev_low = ref_norm * low_frac
-        self.sev_high = ref_norm * high_frac
-        
-        # CWRU 10-class bearing fault taxonomy
-        self.fault_map = {
-            0: 'Normal', 
-            1: 'Ball-007', 2: 'Ball-014', 3: 'Ball-021',
-            4: 'IR-007',  5: 'IR-014',  6: 'IR-021',
-            7: 'OR-007',  8: 'OR-014',  9: 'OR-021'
-        }
+This layer does NOT trust the neural network's class label on its own. For each
+prediction it INDEPENDENTLY computes the bearing characteristic frequencies from
+geometry + shaft speed, measures their prominence in the signal's envelope
+spectrum, and checks whether the physical evidence supports the predicted fault
+type. The output is an auditable verdict:
 
-    def _quantize_energy(self, feature_norm):
-        """Quantizes continuous embedding L2 spaces into physical domain states."""
-        if feature_norm < self.sev_low:
-            return 'Low'
-        elif feature_norm < self.sev_high:
-            return 'Medium'
-        return 'High'
-    
-    def evaluate(self, fault_type, confidence, feature_norm):
+  CONFIRMED   - CNN prediction agrees with the dominant fault frequency
+  CONFLICT    - CNN prediction disagrees with the physical evidence
+  INCONCLUSIVE- no fault frequency is sufficiently prominent (e.g. weak/normal)
+
+This turns a black-box class label into a diagnosis a maintenance engineer can
+audit against physics, and provides an independent conflict signal that the
+consensus layer can act on. It replaces the previous lookup-table 'rule engine',
+which only checked the CNN's feature-norm against itself.
+"""
+import numpy as np
+from core.envelope import (
+    fault_frequency_evidence, characteristic_frequencies,
+    CWRU_LOAD_RPM, CWRU_FS,
+)
+
+# CWRU 10-class taxonomy -> (fault family, defect size). Family drives the
+# physical frequency check; size drives severity/action.
+CWRU_CLASSES = {
+    0: ('Normal',     None),
+    1: ('Ball',       0.007), 2: ('Ball',       0.014), 3: ('Ball',       0.021),
+    4: ('Inner Race', 0.007), 5: ('Inner Race', 0.014), 6: ('Inner Race', 0.021),
+    7: ('Outer Race', 0.007), 8: ('Outer Race', 0.014), 9: ('Outer Race', 0.021),
+}
+
+# which envelope-evidence key corresponds to each fault family
+FAMILY_TO_FREQ = {'Outer Race': 'BPFO', 'Inner Race': 'BPFI', 'Ball': 'BSF'}
+
+# prominence above this counts as a genuine characteristic-frequency peak
+PROMINENCE_THRESHOLD = 3.0
+
+SEVERITY = {0.007: 'Low', 0.014: 'Medium', 0.021: 'High'}
+ACTIONS = {
+    ('Normal', None):      'Continue monitoring; inspect in 30 days.',
+    ('Ball', 'Low'):       'Schedule inspection within 14 days.',
+    ('Ball', 'Medium'):    'Reduce load; inspect within 7 days.',
+    ('Ball', 'High'):      'Replace within 48h.',
+    ('Inner Race', 'Low'): 'Lubricate; re-inspect in 10 days.',
+    ('Inner Race', 'Medium'): 'Check shaft alignment; inspect within 5 days.',
+    ('Inner Race', 'High'):'Immediate shutdown; full replacement.',
+    ('Outer Race', 'Low'): 'Increase monitoring; inspect in 10 days.',
+    ('Outer Race', 'Medium'):'Reduce speed; inspect within 5 days.',
+    ('Outer Race', 'High'):'Immediate shutdown; replace outer-race assembly.',
+}
+
+
+class PhysicsRuleEngine:
+    """Independent physics verification of a neural fault prediction."""
+
+    def __init__(self, prominence_threshold=PROMINENCE_THRESHOLD,
+                 load_rpm=None, fs=CWRU_FS):
+        self.tau = prominence_threshold
+        self.load_rpm = load_rpm or CWRU_LOAD_RPM
+        self.fs = fs
+
+    def diagnose(self, signal, cnn_class, load):
+        """Produce an auditable, physics-checked diagnosis for one window.
+
+        signal    : raw 1D vibration window
+        cnn_class : the CNN's predicted class (0..9)
+        load      : operating load (maps to shaft rpm)
         """
-        Validates structural consistency. Returns a boolean truth flag.
-        Returns False if a connectionist network prediction violates physical constraints.
-        """
-        severity = self._quantize_energy(feature_norm)
-        is_normal_class = (fault_type == 0)
-        
-        # Rule 1: A normal classification cannot coexist with high structural energy profiles
-        if is_normal_class and severity == 'High':
-            return False
-            
-        # Rule 2: Advanced, terminal mechanical defects cannot return ambient/low feature norms
-        # Targets depths of 0.021" (labels 3, 6, 9)
-        if fault_type in [3, 6, 9] and severity == 'Low':
-            return False
-            
-        if fault_type not in self.fault_map:
-            return False
-            
-        return True
-    
-    def get_metadata(self, fault_type, feature_norm):
-        """Helper to compile formal report maps once structural states pass validation."""
-        severity = self._quantize_energy(feature_norm)
+        rpm = self.load_rpm.get(int(load), 1797)
+        evidence = fault_frequency_evidence(signal, rpm, fs=self.fs)
+        family, size = CWRU_CLASSES.get(int(cnn_class), ('Unknown', None))
+
+        # which fault family does the PHYSICS most support?
+        fam_evidence = {'Outer Race': evidence['BPFO'],
+                        'Inner Race': evidence['BPFI'],
+                        'Ball': evidence['BSF']}
+        phys_family = max(fam_evidence, key=fam_evidence.get)
+        phys_strength = fam_evidence[phys_family]
+
+        # verdict logic
+        if family == 'Normal':
+            # normal is supported when NO fault frequency is prominent
+            if phys_strength < self.tau:
+                verdict = 'CONFIRMED'
+            else:
+                verdict = 'CONFLICT'   # CNN says normal but a fault freq is present
+        elif phys_strength < self.tau:
+            verdict = 'INCONCLUSIVE'   # CNN names a fault but physics is weak
+        elif phys_family == family:
+            verdict = 'CONFIRMED'      # physics agrees with the CNN's fault family
+        else:
+            verdict = 'CONFLICT'       # physics points to a different fault family
+
+        severity = SEVERITY.get(size, 'None') if size else 'None'
+        action = ACTIONS.get((family, severity if size else None),
+                             'Review manually.')
         return {
-            'fault': self.fault_map.get(fault_type, 'Unknown'),
+            'cnn_class': int(cnn_class),
+            'cnn_family': family,
+            'defect_size_in': size,
             'severity': severity,
-            'is_valid': self.evaluate(fault_type, 1.0, feature_norm)
+            'physics_family': phys_family,
+            'physics_strength': float(phys_strength),
+            'characteristic_freqs_hz': evidence['freqs_hz'],
+            'band_evidence': {k: float(evidence[k]) for k in ('BPFO', 'BPFI', 'BSF')},
+            'verdict': verdict,
+            'action': action,
+            'explanation': self._explain(family, phys_family, phys_strength,
+                                         verdict, evidence['freqs_hz']),
         }
 
-# Global module execution instance
-rule_engine = BearingRule()
+    def _explain(self, cnn_family, phys_family, strength, verdict, freqs):
+        if verdict == 'CONFIRMED' and cnn_family == 'Normal':
+            return ("No characteristic fault frequency is prominent in the "
+                    "envelope spectrum; a Normal classification is physically "
+                    "consistent.")
+        if verdict == 'CONFIRMED':
+            f = freqs.get(FAMILY_TO_FREQ.get(cnn_family, ''), 0.0)
+            return (f"Envelope spectrum shows a prominent peak near "
+                    f"{f:.1f} Hz (the {FAMILY_TO_FREQ.get(cnn_family)} for this "
+                    f"speed), confirming a {cnn_family} fault.")
+        if verdict == 'CONFLICT' and cnn_family == 'Normal':
+            return (f"CNN predicts Normal, but a {phys_family} characteristic "
+                    f"frequency is prominent (strength {strength:.1f}). "
+                    f"Flag for review.")
+        if verdict == 'CONFLICT':
+            return (f"CNN predicts {cnn_family}, but the envelope spectrum is "
+                    f"dominated by the {phys_family} characteristic frequency "
+                    f"(strength {strength:.1f}). Physics and network disagree; "
+                    f"flag for review.")
+        return (f"CNN predicts {cnn_family}, but no characteristic fault "
+                f"frequency is sufficiently prominent (max strength "
+                f"{strength:.1f} < {self.tau}); evidence inconclusive.")
+
+
+# module-level instance for the pipeline
+rule_engine = PhysicsRuleEngine()
