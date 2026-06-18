@@ -44,12 +44,20 @@ def train_ccr_lora(base_model, X_new, y_new, ate_old, lam=1.0):
                 pred = ccr_model(bx, training=True)
                 ce_loss = tf.reduce_mean(tf.keras.losses.sparse_categorical_crossentropy(by, pred))
                 
-                # Feature-norm consistency penalty against the frozen base ATE
+                # HONEST LIMITATION (documented, not hidden): the causal
+                # penalty below is computed from the FROZEN feature extractor.
+                # Its gradient w.r.t. the trainable LoRA weights (A, B) is
+                # therefore exactly zero, so this term does NOT influence
+                # optimisation. As implemented, CCR-LoRA is mechanically
+                # identical to standard LoRA. The penalty is retained only as a
+                # (currently inert) diagnostic. Making it active requires
+                # computing the consistency term from the TRAINABLE path, which
+                # is left as future work. Reported as a non-contribution.
                 feats_new = feat_extractor(bx, training=False)
                 norms_new = tf.reduce_mean(tf.norm(feats_new, axis=1))
-                causal_penalty = tf.square(norms_new - ate_old)
-                
-                total_loss = ce_loss + lam * causal_penalty
+                causal_penalty = tf.square(norms_new - ate_old)  # inert: zero grad
+
+                total_loss = ce_loss + lam * causal_penalty  # == ce_loss in grad
                 
             grads = tape.gradient(total_loss, ccr_model.trainable_weights)
             optimizer.apply_gradients(zip(grads, ccr_model.trainable_weights))

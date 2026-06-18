@@ -28,12 +28,12 @@ def run_ece(cnn_confs, cnsd_scores, correct):
     print(f'{"Method":<28} {"ECE":>8} {"Accuracy":>10}')
     print('-' * 50)
     print(f'{"CNN softmax only":<28} {ece_cnn:>8.4f} {acc:>10.4f}')
-    print(f'{"CNSD bidirectional":<28} {ece_cnsd:>8.4f} {acc:>10.4f}')
+    print(f'{"CNSD (gated)":<28} {ece_cnsd:>8.4f} {acc:>10.4f}')
     return {'cnn': ece_cnn, 'cnsd': ece_cnsd, 'accuracy': acc}
 
 def run_proposition1(feat_norms, ate, correct):
     """
-    Proposition 1 check with a direction-invariant risk measure:
+    Design-property check (NOT a theorem) with a direction-invariant risk measure:
         risk = |abs(norm*ate) - median(abs(norm*ate))|
     Tests whether extreme (direction-invariant) causal risk predicts higher
     classification error, via quartile error rates and a Spearman correlation.
@@ -55,12 +55,12 @@ def run_proposition1(feat_norms, ate, correct):
     print(f'\nStrict monotonicity: {"SATISFIED" if monotonic else "VIOLATED"}')
     print(f'Spearman (risk deviation, error): rho={rho:.4f}, p={p:.4f}')
     if monotonic and rho > 0 and p < 0.05:
-        print('Condition 1 SATISFIED: Proposition A empirically supported.')
+        print('Design property holds empirically on this run (stated as a property, not a proven theorem).')
     elif rho > 0 and p < 0.05:
         print('Condition 1 partially satisfied (weaker sufficient condition).')
     else:
         print('Condition 1 NOT supported on this dataset - stated as a limitation:')
         print('extreme risk deviations do not predict classification error here.')
-        print('The bidirectional mechanism affects ECE via EMA smoothing, not monotonicity.')
+        print('The feedback-gating mechanism affects ECE via EMA smoothing, not monotonicity.')
     return {'rho': float(rho), 'p': float(p), 'monotonic': bool(monotonic),
             'quartile_errors': [float(x) for x in quartile_errs]}

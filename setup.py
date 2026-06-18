@@ -15,7 +15,7 @@ setup(
     ],
     python_requires='>=3.9',
     author='Abhimanyu Prasad',
-    description='Causal Neuro-Symbolic Diagnosis: a five-layer bidirectional fault-diagnosis pipeline spanning association, intervention, and counterfactual reasoning.',
+    description='Causal Neuro-Symbolic Diagnosis: a neuro-symbolic fault-diagnosis pipeline with physics-grounded symbolic verification and Rung-2 causal analysis (Rung 3 reported as sensitivity analysis).',
     url='https://github.com/abhiprd2000/CNSD',
     license='MIT',
 )

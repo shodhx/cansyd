@@ -26,7 +26,7 @@ def consensus_scores(preds, confs, feat_norms, severities, jepa_agrees, u_f, ate
         cf_conf = max(0.0, 1.0 - min(abs(float(u_f[i])), 1.0))
         jepa_signal = 1.0 if dis_jepa else float(jepa_agrees[i])
 
-        # Bidirectional EMA risk scaling (forward-only freezes it at the midpoint)
+        # Causally-modulated gating: EMA risk scaling (forward-only freezes it at the midpoint)
         if not forward_only:
             risk_ema = alpha * abs(risk) + (1 - alpha) * risk_ema
         else:
@@ -71,7 +71,7 @@ def run_ablation(y_test, preds, confs, feat_norms, severities, jepa_agrees, u_f,
         print(f'{name:<22} {acc:>8.4f} {reliable:>10.4f} {s.mean():>9.4f} {s.std():>9.4f}')
 
     bidir, fwd = results['Full CNSD (bidir)'], results['Forward only']
-    print('\n--- Bidirectional vs Forward-Only ---')
+    print('\n--- Causally-modulated gating vs Forward-Only ---')
     print(f"Score:    {bidir['score_mean']:.4f} vs {fwd['score_mean']:.4f} "
           f"(delta={bidir['score_mean']-fwd['score_mean']:+.4f})")
     print(f"Reliable: {bidir['reliable']:.4f} vs {fwd['reliable']:.4f} "
