@@ -114,5 +114,5 @@ def load_cwru_all(train_loads=(0,1,2), test_loads=(3,)):
 
 
 # ── rotating-machinery replication datasets ──
-from data.jnu_loader import load_jnu_all
-from data.seu_loader import load_seu_gear_all
+from data.jnu_loaders import load_jnu_all
+from data.seu_loaders import load_seu_gear_all
