@@ -1,0 +1,38 @@
+schema_version: "1.0"
+
+dataset:
+  name: "cwru" # Configurable for any dataset
+  base_dir: "./data/"
+  sampling_rate_hz: 12000
+  features:
+    - "vibration"
+    - "temperature"
+    - "current"
+
+target:
+  column: "fault"
+
+domain:
+  type: "bearing"
+
+physics:
+  parameters:
+    bearing_type: "6205-2RS"
+    motor_load_rpm:
+      0: 1797
+      1: 1772
+      2: 1750
+      3: 1730
+
+taxonomy:
+  classes:
+    0: ["Normal", null]
+    1: ["Ball", 0.007]
+    2: ["Ball", 0.014]
+    3: ["Ball", 0.021]
+    4: ["Inner", 0.007]
+    5: ["Inner", 0.014]
+    6: ["Inner", 0.021]
+    7: ["Outer", 0.007]
+    8: ["Outer", 0.014]
+    9: ["Outer", 0.021]
