@@ -10,9 +10,19 @@ class DatasetConfig:
     sampling_rate_hz: int
     features: List[str]
 
+    def __post_init__(self):
+        if not isinstance(self.sampling_rate_hz, int) or self.sampling_rate_hz <= 0:
+            raise ValueError(f"sampling_rate_hz must be a positive integer. Got: {self.sampling_rate_hz}")
+        if not isinstance(self.features, list) or len(self.features) == 0:
+            raise ValueError("features must be a non-empty list of strings.")
+
 @dataclass
 class TargetConfig:
     column: str
+
+    def __post_init__(self):
+        if not self.column:
+            raise ValueError("Target column cannot be empty.")
 
 @dataclass
 class DomainConfig:
@@ -28,11 +38,16 @@ class TaxonomyConfig:
 
 @dataclass
 class CNSDConfig:
+    schema_version: str
     dataset: DatasetConfig
     target: TargetConfig
     domain: DomainConfig
-    physics: PhysicsConfigParameters
     taxonomy: TaxonomyConfig
+    physics: Optional[PhysicsConfigParameters] = None
+
+    def __post_init__(self):
+        if self.schema_version != "1.0":
+            raise ValueError(f"Unsupported schema_version: '{self.schema_version}'. Expected '1.0'.")
 
 def load_config(config_path: Optional[str] = None) -> CNSDConfig:
     """
@@ -50,17 +65,17 @@ def load_config(config_path: Optional[str] = None) -> CNSDConfig:
     with open(config_path, "r") as f:
         raw_config = yaml.safe_load(f)
 
+    # Extract physics safely, allowing it to be None for non-bearing domains
+    physics_raw = raw_config.get("physics")
+    physics_obj = None
+    if physics_raw is not None and "parameters" in physics_raw:
+        physics_obj = PhysicsConfigParameters(parameters=physics_raw["parameters"])
+
     return CNSDConfig(
+        schema_version=str(raw_config.get("schema_version", "1.0")),
         dataset=DatasetConfig(**raw_config.get("dataset", {})),
         target=TargetConfig(**raw_config.get("target", {})),
         domain=DomainConfig(**raw_config.get("domain", {})),
-        physics=PhysicsConfigParameters(parameters=raw_config.get("physics", {}).get("parameters", {})),
+        physics=physics_obj,
         taxonomy=TaxonomyConfig(classes=raw_config.get("taxonomy", {}).get("classes", {}))
     )
-
-# Global singleton configuration that downstream layers will import
-try:
-    config = load_config()
-except FileNotFoundError:
-    # Graceful fallback during tests or initial setup before config is explicitly provided
-    config = None

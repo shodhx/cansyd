@@ -1,3 +1,5 @@
+schema_version: "1.0"
+
 dataset:
   name: "cwru" # Configurable for any dataset
   base_dir: "./data/"
