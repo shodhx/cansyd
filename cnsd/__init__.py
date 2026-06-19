@@ -25,7 +25,7 @@ __version__ = '1.0.0'
 # Lazy top-level names (PEP 562): keeps `from cnsd import CNSD` working without
 # forcing TensorFlow on users who only want the causal / physics / dataset tools.
 _LAZY = {
-    'CNSD': ('cnsd.diagnosis', 'CNSD'),
+    'CNSD': ('cnsd.api', 'CNSD'),
     'DiagnosisReport': ('cnsd.diagnosis', 'DiagnosisReport'),
     'Dataset': ('cnsd.datasets', 'Dataset'),
     'load_dataset': ('cnsd.datasets', 'load_dataset'),

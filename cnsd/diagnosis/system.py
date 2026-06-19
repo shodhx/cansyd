@@ -26,9 +26,10 @@ from cnsd.diagnosis.report import DiagnosisReport
 class CNSD:
     """Five-layer Causal Neuro-Symbolic Diagnosis system."""
 
-    def __init__(self, conf_thresh=0.90, prominence_threshold=3.0):
+    def __init__(self, conf_thresh=0.90, prominence_threshold=3.0, config=None):
         self.conf_thresh = conf_thresh
         self.prominence_threshold = prominence_threshold
+        self.config = config
         self.cnn = None
         self.symbolic = None
         self.scm = None
@@ -74,7 +75,14 @@ class CNSD:
 
     def what_if(self, data: Dataset, unit_index, condition_cf):
         """Rung-3 counterfactual for one unit (sensitivity fallback w/o DoWhy)."""
+        # Future refactor: process the full condition_cf dictionary for multiple interventions.
+        # Currently, the core SCM supports a single Z variable, so we extract the first value.
+        if isinstance(condition_cf, dict):
+            cf_val = list(condition_cf.values())[0] if condition_cf else 0.0
+        else:
+            cf_val = condition_cf
+            
         feat = signal_kurtosis(data.X[unit_index:unit_index+1])[0]
-        return what_if(feat, data.cond[unit_index], condition_cf,
+        return what_if(feat, data.cond[unit_index], cf_val,
                        scm=self.scm, X_sample=data.X[unit_index].flatten(),
                        factual_y=(data.y[unit_index] > 0))
