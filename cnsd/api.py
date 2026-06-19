@@ -22,11 +22,14 @@ class CNSD:
         Args:
             config: Path to the YAML configuration file defining the domain.
         """
-        self.config = load_config(config)
+        try:
+            self.config = load_config(config)
+        except Exception as e:
+            raise ValueError(f"Failed to load configuration from {config}: {str(e)}")
         
-        # We pass the domain-agnostic config to the internal engine
-        # (Assuming the internal refactoring will eventually pipe self.config deeper)
-        self._engine = InternalEngine()
+        # We pass the domain-agnostic config directly to the internal engine
+        # so it can be utilized deeply during internal physics refactoring.
+        self._engine = InternalEngine(config=self.config)
         self._fitted = False
 
     def _ensure_fitted(self, data):
@@ -47,8 +50,11 @@ class CNSD:
             DiagnosisReport: A structured report containing predicted faults, 
                              confidence scores, and actionable maintenance metadata.
         """
-        self._ensure_fitted(data)
-        return self._engine.diagnose(data)
+        try:
+            self._ensure_fitted(data)
+            return self._engine.diagnose(data)
+        except Exception as e:
+            raise RuntimeError(f"Diagnosis API failed: {str(e)}")
 
     def explain(self, data) -> Any:
         """
@@ -62,8 +68,11 @@ class CNSD:
             Intervention effect summary containing estimated causal effects
             and identified confounders.
         """
-        self._ensure_fitted(data)
-        return self._engine.condition_effect(data)
+        try:
+            self._ensure_fitted(data)
+            return self._engine.condition_effect(data)
+        except Exception as e:
+            raise RuntimeError(f"Causal Analysis API failed: {str(e)}")
 
     def what_if(self, data, intervention: Dict[str, float], unit_index: int = 0) -> Any:
         """
@@ -73,20 +82,19 @@ class CNSD:
 
         Args:
             data: Dataset object.
-            intervention: A dictionary mapping the condition variable to a hypothetical value.
-                          (e.g., {"load": 0.8})
+            intervention: A dictionary mapping the condition variables to hypothetical values.
+                          (e.g., {"load": 0.8, "temperature": 40.0})
             unit_index: The specific machine index in the dataset to run the counterfactual on.
             
         Returns:
             Counterfactual prediction result.
         """
-        self._ensure_fitted(data)
-        
-        # Extract the hypothetical condition value
-        # For a single operating condition, we grab the first value in the dict
-        condition_cf = list(intervention.values())[0] if intervention else 0.0
-        
-        return self._engine.what_if(data, unit_index=unit_index, condition_cf=condition_cf)
+        try:
+            self._ensure_fitted(data)
+            # Pass the entire intervention dictionary down to the engine
+            return self._engine.what_if(data, unit_index=unit_index, condition_cf=intervention)
+        except Exception as e:
+            raise RuntimeError(f"Counterfactual API failed: {str(e)}")
 
     def scm_analysis(self, data) -> Any:
         """
@@ -99,5 +107,8 @@ class CNSD:
             The underlying DoWhy/NetworkX Structural Causal Model object containing
             structural relationships and graph information.
         """
-        self._ensure_fitted(data)
-        return self._engine.scm
+        try:
+            self._ensure_fitted(data)
+            return self._engine.scm
+        except Exception as e:
+            raise RuntimeError(f"SCM API failed: {str(e)}")
