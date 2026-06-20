@@ -61,6 +61,7 @@ class CNSD:
             p = data.physics
             provider = BearingProvider(bearing=p.bearing, cond_to_rpm=p.cond_to_rpm, fs=p.fs)
             return PhysicsRuleEngine(provider=provider,
+                                     taxonomy=getattr(data, 'taxonomy', None),
                                      prominence_threshold=self.prominence_threshold)
         fs = getattr(data, 'fs', 12000) or 12000
         return PhysicsRuleEngine(provider=SpectralProvider(fs=fs),
@@ -77,6 +78,7 @@ class CNSD:
             status = fuse(diag['verdict'], cnn_conf[i], self.conf_thresh)
             records.append({
                 'root_cause': diag['root_cause'],
+                'predicted_class': diag['predicted_class'],
                 'predicted_fault': diag['predicted_family'],
                 'severity': diag['severity'],
                 'cnn_confidence': float(cnn_conf[i]),

@@ -30,6 +30,7 @@ class Dataset:
     cond: np.ndarray
     fs: int
     physics: Optional[PhysicsConfig] = None
+    taxonomy: Optional[Dict] = None
     name: str = 'dataset'
 
     def __post_init__(self):
@@ -51,10 +52,10 @@ class Dataset:
         return self.X.shape[1]
 
     @classmethod
-    def from_arrays(cls, X, y, cond, fs, physics=None, name='custom'):
+    def from_arrays(cls, X, y, cond, fs, physics=None, taxonomy=None, name='custom'):
         """Wrap arbitrary user arrays as a CNSD dataset. This is the entry point
         for ANY new vibration dataset - no bespoke loader required."""
-        return cls(X=X, y=y, cond=cond, fs=fs, physics=physics, name=name)
+        return cls(X=X, y=y, cond=cond, fs=fs, physics=physics, taxonomy=taxonomy, name=name)
 
     def summary(self):
         classes = sorted(np.unique(self.y).tolist())
