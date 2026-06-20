@@ -1,7 +1,11 @@
 """Quickstart: diagnose a dataset in five lines."""
-from cnsd import CNSD, load_dataset
+from cnsd import CNSD, Dataset
 
-data = load_dataset('cwru')
+# bring your own arrays (signals, labels, operating condition, sampling rate)
+import numpy as np
+X = np.random.randn(200, 1024); y = np.random.randint(0, 10, 200)
+cond = np.random.choice([0, 1, 2, 3], 200)
+data = Dataset.from_arrays(X, y, cond, fs=12000)
 report = CNSD().fit(data).diagnose(data)
 
 print(report.summary())

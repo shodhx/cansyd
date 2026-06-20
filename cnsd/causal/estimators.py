@@ -71,7 +71,7 @@ def placebo_test(treatment, fault, confounder, n_perm=1000, seed=42):
     ratio = abs(real) / (placebo.mean() + 1e-12)
     return p_val, float(ratio)
 
-def analyze_causal(treatment, fault, confounder, domain='CWRU'):
+def analyze_causal(treatment, fault, confounder, domain='dataset'):
     """
     Backdoor-adjusted ATE with bootstrap CI + permutation placebo test.
       treatment : a physically grounded signal descriptor (e.g. kurtosis, RMS).
@@ -165,13 +165,13 @@ def causal_invariance_across_loads(treatment, fault, loads):
     return rows, summary
 
 
-# ── Rung 2: interventional effect of operating condition (the honest do-op) ──
+# ── Rung 2: interventional effect of operating condition ──
 
 def intervention_effect_of_condition(fault, condition, n_perm=1000, seed=42):
     """Estimate the effect of operating condition Z on fault manifestation.
 
     Z (load/speed) is physically manipulable, so contrasting fault rates across
-    conditions is a genuine Rung-2 interventional quantity, E[Y | do(Z=a)] vs
+    conditions is a Rung-2 interventional quantity, E[Y | do(Z=a)] vs
     E[Y | do(Z=b)], identified here under the SCM in core/scm.py (no instrument,
     no backwards arrow). Returns the per-condition fault rate, the max pairwise
     contrast, and a permutation p-value for whether condition affects the rate.

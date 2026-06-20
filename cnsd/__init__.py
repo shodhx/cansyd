@@ -11,8 +11,8 @@ A deployable five-layer fault-diagnosis system for rotating machinery:
 
 Quick start:
 
-    from cnsd import CNSD, load_dataset
-    data   = load_dataset('cwru')
+    from cnsd import CNSD, Dataset
+    data   = Dataset.from_arrays(signals, labels, condition, fs=12000)
     report = CNSD().fit(data).diagnose(data)
     print(report.summary())
 
@@ -28,11 +28,7 @@ _LAZY = {
     'CNSD': ('cnsd.api', 'CNSD'),
     'DiagnosisReport': ('cnsd.diagnosis', 'DiagnosisReport'),
     'Dataset': ('cnsd.datasets', 'Dataset'),
-    'load_dataset': ('cnsd.datasets', 'load_dataset'),
     'PhysicsConfig': ('cnsd.physics', 'PhysicsConfig'),
-    'CWRU_PHYSICS': ('cnsd.physics', 'CWRU_PHYSICS'),
-    'JNU_PHYSICS': ('cnsd.physics', 'JNU_PHYSICS'),
-    'SEU_PHYSICS': ('cnsd.physics', 'SEU_PHYSICS'),
 }
 
 __all__ = list(_LAZY)

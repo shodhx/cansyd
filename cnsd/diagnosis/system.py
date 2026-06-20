@@ -4,8 +4,8 @@ CNSD's front door.
 CNSD's whole five-layer pipeline is behind
 one object:
 
-    from cnsd import CNSD, load_dataset
-    data   = load_dataset('cwru')
+    from cnsd import CNSD, Dataset
+    data   = Dataset.from_arrays(signals, labels, condition, fs=12000)
     model  = CNSD().fit(data)
     report = model.diagnose(data)
 
@@ -40,13 +40,31 @@ class CNSD:
         from cnsd.perception.cnn import _train_cnn
         nc = int(data.y.max()) + 1
         self.cnn = _train_cnn(data.X, data.y, num_classes=nc, epochs=epochs)
-        self.symbolic = PhysicsRuleEngine(physics=data.physics,
-                                          prominence_threshold=self.prominence_threshold)
+        self.symbolic = self._build_symbolic(data)
         # fit the Rung-3 SCM (graceful None if DoWhy absent)
         feat = signal_kurtosis(data.X)
         self.scm = build_scm(data.cond, feat, data.y)
         self._fitted = True
         return self
+
+    def _build_symbolic(self, data):
+        """Resolve the physics provider + taxonomy: config first, else the
+        dataset's attached physics, else the universal spectral fallback."""
+        from cnsd.symbolic import PhysicsRuleEngine
+        from cnsd.physics.providers import SpectralProvider, BearingProvider
+        if self.config is not None:
+            from cnsd.builder import build_provider, build_taxonomy
+            return PhysicsRuleEngine(provider=build_provider(self.config),
+                                     taxonomy=build_taxonomy(self.config),
+                                     prominence_threshold=self.prominence_threshold)
+        if getattr(data, 'physics', None) is not None:
+            p = data.physics
+            provider = BearingProvider(bearing=p.bearing, cond_to_rpm=p.cond_to_rpm, fs=p.fs)
+            return PhysicsRuleEngine(provider=provider,
+                                     prominence_threshold=self.prominence_threshold)
+        fs = getattr(data, 'fs', 12000) or 12000
+        return PhysicsRuleEngine(provider=SpectralProvider(fs=fs),
+                                 prominence_threshold=self.prominence_threshold)
 
     def diagnose(self, data: Dataset) -> DiagnosisReport:
         if not self._fitted:
@@ -59,7 +77,7 @@ class CNSD:
             status = fuse(diag['verdict'], cnn_conf[i], self.conf_thresh)
             records.append({
                 'root_cause': diag['root_cause'],
-                'predicted_fault': diag['cnn_family'],
+                'predicted_fault': diag['predicted_family'],
                 'severity': diag['severity'],
                 'cnn_confidence': float(cnn_conf[i]),
                 'physics_verdict': diag['verdict'],

@@ -39,6 +39,8 @@ def build_scm(condition, signal_feature, fault_outcome):
         'X': np.asarray(signal_feature, float),
         'Y': (np.asarray(fault_outcome) > 0).astype(float),
     })
+    # operational graph over the measured descriptor X (condition Z -> descriptor
+    # X -> outcome Y); used to fit mechanisms for counterfactual queries on Z.
     graph = nx.DiGraph([('Z', 'X'), ('X', 'Y'), ('Z', 'Y')])
     scm = gcm.InvertibleStructuralCausalModel(graph)
     gcm.auto.assign_causal_mechanisms(scm, df)
@@ -63,15 +65,17 @@ def counterfactual_for_unit(scm, observed_row, condition_cf):
         'factual': {'Z': float(observed_row['Z']), 'Y': float(observed_row['Y'])},
         'counterfactual': {'Z': float(condition_cf), 'Y': float(cf['Y'].iloc[0])},
         'delta_Y': float(cf['Y'].iloc[0] - observed_row['Y']),
-        'method': 'Pearl Rung-3 (DoWhy gcm abduction-action-prediction)',
+        'method': 'structural_counterfactual',
     }
 
 
 def what_if(signal_feature_value, condition_actual, condition_cf,
             scm=None, X_sample=None, factual_y=0.0):
-    """Unified entry point. Uses the REAL Rung-3 counterfactual when a fitted SCM
-    is provided (and DoWhy is available); otherwise falls back to the honest
-    local-sensitivity analysis and labels itself as such.
+    """Counterfactual query for one unit.
+
+    Returns a structural counterfactual (DoWhy gcm) when a fitted SCM is provided
+    and DoWhy is installed; otherwise returns a local sensitivity estimate, with
+    the 'method' field indicating which was used.
     """
     if scm is not None and dowhy_gcm_available():
         row = {'Z': float(condition_actual), 'X': float(signal_feature_value),
@@ -79,7 +83,6 @@ def what_if(signal_feature_value, condition_actual, condition_cf,
         # abduction recovers noise from Z,X,Y; Y is recomputed counterfactually
         return counterfactual_for_unit(scm, row, condition_cf)
 
-    # fallback - NOT Rung 3
     from cnsd.counterfactual.sensitivity import local_sensitivity
     if X_sample is None:
         X_sample = np.array([signal_feature_value])
@@ -88,6 +91,6 @@ def what_if(signal_feature_value, condition_actual, condition_cf,
         'factual': {'Z': float(condition_actual)},
         'counterfactual': {'Z': float(condition_cf),
                            'prob_change': s['prob_change']},
-        'method': 'local sensitivity (DoWhy not available - NOT Rung 3)',
-        'note': 'install dowhy for the real Rung-3 counterfactual',
+        'method': 'local_sensitivity',
+        'note': 'install dowhy for structural counterfactuals',
     }

@@ -13,7 +13,7 @@ Built-in adapters wrap the existing CWRU/JNU/SEU/Paderborn loaders into this
 contract, but ANY user array can be wrapped with Dataset.from_arrays(...).
 """
 import numpy as np
-from cnsd.physics.configs import PhysicsConfig, CWRU_PHYSICS, JNU_PHYSICS, SEU_PHYSICS
+from cnsd.physics.configs import PhysicsConfig
 from dataclasses import dataclass, field
 from typing import Optional, Dict, Callable
 
@@ -68,34 +68,3 @@ class Dataset:
 
 
 
-# SEU gears: no rolling-bearing characteristic frequencies apply (gear-mesh
-# physics differs); use geometry-free fallback for the symbolic layer.
-
-
-# ── Adapters: wrap the existing loaders into the universal Dataset ──────────
-
-def _split_to_dataset(loaded6, fs, physics, name):
-    """Combine a loader's (Xtr,ytr,ctr,Xte,yte,cte) 6-tuple into one Dataset."""
-    Xtr, ytr, ctr, Xte, yte, cte = loaded6
-    X = np.concatenate([Xtr, Xte])
-    y = np.concatenate([ytr, yte])
-    cond = np.concatenate([ctr, cte])
-    return Dataset(X=X, y=y, cond=cond, fs=fs, physics=physics, name=name)
-
-
-def load_dataset(name, **kwargs):
-    """Factory: return a Dataset for any bundled dataset by name. New datasets
-    are added via Dataset.from_arrays(...) without touching the pipeline.
-    """
-    name = name.lower()
-    if name == 'cwru':
-        from cnsd.datasets.cwru import load_cwru_all
-        return _split_to_dataset(load_cwru_all(**kwargs), 12000, CWRU_PHYSICS, 'CWRU')
-    if name == 'jnu':
-        from cnsd.datasets.cwru import load_jnu_all
-        return _split_to_dataset(load_jnu_all(**kwargs), 50000, JNU_PHYSICS, 'JNU')
-    if name == 'seu':
-        from cnsd.datasets.cwru import load_seu_gear_all
-        return _split_to_dataset(load_seu_gear_all(**kwargs), 5120, SEU_PHYSICS, 'SEU')
-    raise ValueError(f"Unknown dataset '{name}'. For a new dataset use "
-                     "Dataset.from_arrays(X, y, cond, fs, physics=...).")

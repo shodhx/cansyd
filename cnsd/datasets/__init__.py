@@ -1,6 +1,4 @@
-"""Datasets: the universal Dataset contract + built-in loaders.
-
-Any vibration dataset plugs in via Dataset.from_arrays(X, y, cond, fs). 
-"""
-from cnsd.datasets.contract import Dataset, load_dataset
-from cnsd.physics.configs import PhysicsConfig, CWRU_PHYSICS, JNU_PHYSICS, SEU_PHYSICS
+"""The universal data contract. Any vibration dataset plugs in through
+Dataset.from_arrays(X, y, cond, fs); the system needs no prior knowledge of it."""
+from cnsd.datasets.contract import Dataset
+from cnsd.physics.configs import PhysicsConfig

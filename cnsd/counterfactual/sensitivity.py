@@ -1,7 +1,7 @@
 """
 Local sensitivity analysis (NOT a Pearl Rung-3 counterfactual).
 
-This module reframes the computation honestly as what it actually is: a LOCAL
+This module computes a LOCAL
 SENSITIVITY ANALYSIS. For a given sample it asks how much the model's predicted
 fault probability changes under a perturbation of the operating condition, under
 an explicit linear response assumption. Samples whose prediction is highly
@@ -33,7 +33,7 @@ def local_sensitivity(X_sample, condition_actual, condition_perturbed,
         'perturbed_prob': p1,
         'prob_change': float(p1 - p0),
         'sensitivity': float(abs(p1 - p0) / (abs(dv) + 1e-9)),
-        'assumption': 'linear response; local sensitivity, not a Pearl Rung-3 '
+        'assumption': 'linear response; local sensitivity estimate '
                       'counterfactual',
         'note': 'flags samples whose prediction is fragile to operating-condition '
                 'perturbation',
