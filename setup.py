@@ -1,16 +1,26 @@
 from setuptools import setup, find_packages
+from pathlib import Path
+
+long_description = Path('README.md').read_text(encoding='utf-8') if Path('README.md').exists() else ''
+
+extras = {
+    'perception': ['tensorflow>=2.16', 'keras>=3.0'],
+    'counterfactual': ['dowhy>=0.12', 'pandas>=2.0', 'networkx>=3.0'],
+}
+extras['all'] = extras['perception'] + extras['counterfactual']
 
 setup(
     name='cnsd',
     version='1.0.0',
     description='Causal Neuro-Symbolic Diagnosis - a five-layer '
-                'fault-diagnosis system for rotating machinery',
+                'fault-diagnosis framework',
+    long_description=long_description,
+    long_description_content_type='text/markdown',
+    author='Abhimanyu Prasad', 'Kazi Tasfin Mahmud'        
+    url='https://github.com/abhiprd2000/CNSD',
+    license='MIT',                      
     packages=find_packages(),
-    python_requires='>=3.9',
-    install_requires=['numpy', 'scipy', 'scikit-learn'],
-    extras_require={
-        'perception': ['tensorflow>=2.10'],   # Layer 1 (CNN) backend
-        'counterfactual': ['dowhy>=0.11', 'pandas', 'networkx'],  # Rung 3
-        'all': ['tensorflow>=2.10', 'dowhy>=0.11', 'pandas', 'networkx'],
-    },
+    python_requires='>=3.11',            
+    install_requires=['numpy>=2.0', 'scipy>=1.11', 'scikit-learn>=1.4', 'pyyaml>=6.0'],
+    extras_require=extras,
 )

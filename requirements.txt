@@ -1,0 +1,16 @@
+# CNSD - full pipeline dependencies (validated environment)
+
+# core (framework: causal, physics, symbolic, consensus, config)
+numpy==2.4.4
+scipy==1.17.1
+scikit-learn==1.6.1
+PyYAML==6.0.3
+
+# perception layer (1D CNN)
+tensorflow==2.21.0
+keras==3.14.1
+
+# causal counterfactual (Rung-3 via DoWhy)
+dowhy==0.14
+pandas==3.0.2
+networkx==3.6.1
