@@ -23,7 +23,7 @@ def add_awgn(signals, snr_db):
 
 def main():
     print('=' * 80)
-    print('CNSD CROSS-DOMAIN VALIDATION (AWGN NOISE INJECTION)')
+    print('CNSD CROSS-CONDITION ROBUSTNESS (AWGN NOISE INJECTION)')
     print('=' * 80)
 
     # 1. Load baseline data
@@ -47,7 +47,7 @@ def main():
     model.fit(train_data, epochs=30)
     print('Training complete.\n')
 
-    # 3. Evaluate on noisy cross-domains
+    # 3. Evaluate on noisy cross-conditions
     snr_levels = [None, 0, -5, -10]
 
     for snr in snr_levels:
