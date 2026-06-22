@@ -19,7 +19,8 @@ to return X (n,1024), y (n,), cond (n,) - the only dataset-specific code here.
 import sys
 import numpy as np
 
-from cnsd import CNSD, Dataset
+from cnsd import Dataset
+from cnsd.diagnosis.system import CNSD
 from cnsd.physics import PhysicsConfig
 from cnsd.causal import signal_kurtosis
 from cnsd.counterfactual import dowhy_gcm_available, build_scm, counterfactual_for_unit
@@ -27,15 +28,58 @@ from cnsd.counterfactual import dowhy_gcm_available, build_scm, counterfactual_f
 
 # ── the ONLY dataset-specific code: return raw arrays from your CWRU files ────
 def load_cwru():
-    """Return (X, y, cond) for CWRU. Replace the body with your loader.
+    import os
+    from scipy.io import loadmat
+    base_dir = r"E:\301\CWRU-dataset"
+    if not os.path.exists(base_dir):
+        raise FileNotFoundError(f"CWRU dataset not found at {base_dir}")
+    
+    X, y, cond = [], [], []
+    
+    def read_mat(path, label, load):
+        if not os.path.exists(path): return
+        try:
+            mat = loadmat(path)
+            key = [k for k in mat.keys() if 'DE_time' in k]
+            if not key: return
+            time_series = mat[key[0]][:, 0]
+            
+            length = 1024
+            idx_last = -(time_series.shape[0] % length)
+            if idx_last == 0:
+                clips = time_series.reshape(-1, length)
+            else:
+                clips = time_series[:idx_last].reshape(-1, length)
+                
+            for clip in clips:
+                X.append(clip)
+                y.append(label)
+                cond.append(load)
+        except Exception as e:
+            print(f"Error reading {path}: {e}")
 
-    X    : (n, 1024) float   non-overlapping test windows, per-window normalized
-    y    : (n,) int          fault class 0..9 (0 = Normal)
-    cond : (n,) int          motor load 0..3
-    """
-    raise NotImplementedError(
-        "Wire your CWRU loader here: return X (n,1024), y (n,), cond (n,). "
-        "Use Protocol B (train loads 0-2, test load 3) for the real result.")
+    normal_dir = os.path.join(base_dir, "Normal")
+    for f in os.listdir(normal_dir):
+        if f.endswith('.mat'):
+            load = int(f.split('_')[-1].split('.')[0])
+            read_mat(os.path.join(normal_dir, f), 0, load)
+            
+    fault_dir = os.path.join(base_dir, "12k_Drive_End_Bearing_Fault_Data")
+    fault_map = {
+        'B': { '007': 1, '014': 2, '021': 3 },
+        'IR': { '007': 4, '014': 5, '021': 6 },
+        'OR': { '007': 7, '014': 8, '021': 9 }
+    }
+    for ftype, size_map in fault_map.items():
+        for size, label in size_map.items():
+            dir_path = os.path.join(fault_dir, ftype, size)
+            if not os.path.exists(dir_path): continue
+            for f in os.listdir(dir_path):
+                if f.endswith('.mat'):
+                    load = int(f.split('_')[-1].split('.')[0])
+                    read_mat(os.path.join(dir_path, f), label, load)
+                    
+    return np.array(X, dtype=np.float32), np.array(y), np.array(cond)
 
 
 # CWRU 6205 physics + taxonomy (this is config, not hardcoded engine logic)
@@ -73,14 +117,21 @@ def main():
     # 1. data
     X, y, cond = load_cwru()
     X = np.asarray(X, np.float32); y = np.asarray(y); cond = np.asarray(cond)
-    data = Dataset.from_arrays(X, y, cond, fs=12000, physics=CWRU,
-                               taxonomy=TAXONOMY, name='CWRU')
-    print(f'[data] {data.summary()}')
+    
+    train_mask = cond < 3
+    test_mask = cond == 3
+    
+    train_data = Dataset.from_arrays(X[train_mask], y[train_mask], cond[train_mask], fs=12000, physics=CWRU, taxonomy=TAXONOMY, name='CWRU_Train')
+    test_data = Dataset.from_arrays(X[test_mask], y[test_mask], cond[test_mask], fs=12000, physics=CWRU, taxonomy=TAXONOMY, name='CWRU_Test')
+    full_data = Dataset.from_arrays(X, y, cond, fs=12000, physics=CWRU, taxonomy=TAXONOMY, name='CWRU_Full')
+    
+    print(f'[train_data] {train_data.summary()}')
+    print(f'[test_data] {test_data.summary()}')
 
     # 2. fit + 3. diagnose (Layers 1,2,4 live)
     model = CNSD()
-    model.fit(data, epochs=30)
-    report = model.diagnose(data)
+    model.fit(train_data, epochs=30)
+    report = model.diagnose(test_data)
     print(f'\n[pipeline] {report.summary()}')
 
     # 3. Layer-2 verification rate
@@ -90,7 +141,7 @@ def main():
         print(f'    {k:13}: {v:.1%}')
 
     # 4. HEADLINE: CNN accuracy split by verdict
-    hb = headline_accuracy_by_verdict(report, y)
+    hb = headline_accuracy_by_verdict(report, test_data.y)
     print('\n[HEADLINE] CNN accuracy by physics verdict:')
     for v, d in hb.items():
         print(f'    {v:13}: acc={d["cnn_accuracy"]:.3f}  (n={d["n"]})')
@@ -100,18 +151,18 @@ def main():
               f'({"physics is a real reliability signal" if gap > 0 else "investigate"})')
 
     # 5. Layer-3 causal do(Z)
-    eff = model.condition_effect(data)
+    eff = model.condition_effect(full_data)
     print(f'\n[Layer 3] do(Z) operating-condition effect: rung={eff["rung"]} '
           f'max_contrast={eff["max_contrast"]:.4f} p={eff["p_value"]:.4f}')
 
     # 6. Layer-3B: REAL Rung-3 counterfactual (must actually execute, not fallback)
     print(f'\n[Layer 3B] DoWhy available: {dowhy_gcm_available()}')
     if dowhy_gcm_available():
-        feat = signal_kurtosis(data.X)
-        scm = build_scm(data.cond, feat, data.y)
+        feat = signal_kurtosis(full_data.X)
+        scm = build_scm(full_data.cond, feat, full_data.y)
         if scm is not None:
-            row = {'Z': float(data.cond[0]), 'X': float(feat[0]), 'Y': float(data.y[0] > 0)}
-            cf_cond = int(min(np.unique(data.cond)))
+            row = {'Z': float(full_data.cond[0]), 'X': float(feat[0]), 'Y': float(full_data.y[0] > 0)}
+            cf_cond = int(min(np.unique(full_data.cond)))
             cf = counterfactual_for_unit(scm, row, cf_cond)
             print(f'    counterfactual executed: {cf["method"]}')
             print(f'    factual Y={cf["factual"]["Y"]:.2f} -> '
