@@ -1,13 +1,13 @@
 """Physics configs: bearing geometry + condition->rpm + sampling rate per dataset."""
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, Optional
 
 
 @dataclass
 class PhysicsConfig:
-    bearing: Dict[str, float]
     cond_to_rpm: Dict
     fs: int
+    bearing: Optional[Dict[str, float]] = None
     name: str = 'custom'
 
 
