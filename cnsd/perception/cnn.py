@@ -85,9 +85,7 @@ def train_jepa_backbone(X_train_all, y_train_all, epochs=15):
                 z2 = target_encoder(p[:, 1], training=False)
                 loss = vicreg_loss(z1, z2)
             grads = tape.gradient(loss, encoder.trainable_weights)
-            optimizer.apply_gradients(
-                 zip(grads, encoder.trainable_weights, strict=True)
-            )
+            optimizer.apply_gradients(zip(grads, encoder.trainable_weights, strict=True))
 
             for w1, w2 in zip(encoder.weights, target_encoder.weights, strict=True):
                 w2.assign(0.99 * w2 + 0.01 * w1)

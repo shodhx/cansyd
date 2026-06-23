@@ -4,6 +4,7 @@ Demo: Using the new Public CNSD API Layer.
 This script demonstrates how to initialize the framework from a YAML config,
 and run diagnosis, causal analysis, and counterfactuals using the clean API.
 """
+
 import numpy as np
 
 from cnsd import CNSD, Dataset
