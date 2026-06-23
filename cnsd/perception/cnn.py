@@ -71,12 +71,12 @@ def train_jepa_backbone(X_train_all, y_train_all, epochs=15):
     encoder = build_jepa_encoder(128, 256)
     target_encoder = build_jepa_encoder(128, 256)
 
-    for w1, w2 in zip(encoder.weights, target_encoder.weights):
+    for w1, w2 in zip(encoder.weights, target_encoder.weights, strict=True):
         w2.assign(w1)
 
     optimizer = tf.keras.optimizers.Adam(0.001)
 
-    for epoch in range(epochs):
+    for _ in range(epochs):
         for i in range(0, len(X_train_all), 64):
             batch = X_train_all[i : i + 64]
             p = patchify(batch)
@@ -85,9 +85,11 @@ def train_jepa_backbone(X_train_all, y_train_all, epochs=15):
                 z2 = target_encoder(p[:, 1], training=False)
                 loss = vicreg_loss(z1, z2)
             grads = tape.gradient(loss, encoder.trainable_weights)
-            optimizer.apply_gradients(zip(grads, encoder.trainable_weights))
+            optimizer.apply_gradients(
+                 zip(grads, encoder.trainable_weights, strict=True)
+            )
 
-            for w1, w2 in zip(encoder.weights, target_encoder.weights):
+            for w1, w2 in zip(encoder.weights, target_encoder.weights, strict=True):
                 w2.assign(0.99 * w2 + 0.01 * w1)
 
     jepa_embeddings = []

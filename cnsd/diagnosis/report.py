@@ -28,7 +28,6 @@ class DiagnosisReport:
     def accuracy_by_verdict(self):
         if self.dataset is None or self.dataset.y is None:
             return {}
-        correct = np.array([r['predicted_fault'] != 'Unknown' for r in self.records])
         # caller compares against truth externally; provide split helper
         out = {}
         for verdict in ('CONFIRMED', 'CONFLICT'):

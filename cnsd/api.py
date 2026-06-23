@@ -26,7 +26,9 @@ class CNSD:
         try:
             self.config = load_config(config)
         except Exception as e:
-            raise ValueError(f'Failed to load configuration from {config}: {str(e)}')
+            raise ValueError(
+                f'Failed to load configuration from {config}: {str(e)}'
+            ) from e
 
         # We pass the domain-agnostic config directly to the internal engine
         # so it can be utilized deeply during internal physics refactoring.
@@ -55,7 +57,9 @@ class CNSD:
             self._ensure_fitted(data)
             return self._engine.diagnose(data)
         except Exception as e:
-            raise RuntimeError(f'Diagnosis API failed: {str(e)}')
+            raise RuntimeError(
+                f'Diagnosis API failed: {str(e)}'
+            ) from e
 
     def explain(self, data) -> Any:
         """
@@ -73,7 +77,9 @@ class CNSD:
             self._ensure_fitted(data)
             return self._engine.condition_effect(data)
         except Exception as e:
-            raise RuntimeError(f'Causal Analysis API failed: {str(e)}')
+            raise RuntimeError(
+                f'Causal Analysis API failed: {str(e)}'
+            ) from e
 
     def what_if(self, data, intervention: dict[str, float], unit_index: int = 0) -> Any:
         """
@@ -95,7 +101,9 @@ class CNSD:
             # Pass the entire intervention dictionary down to the engine
             return self._engine.what_if(data, unit_index=unit_index, condition_cf=intervention)
         except Exception as e:
-            raise RuntimeError(f'Counterfactual API failed: {str(e)}')
+            raise RuntimeError(
+                f'Counterfactual API failed: {str(e)}'
+            ) from e
 
     def scm_analysis(self, data) -> Any:
         """
@@ -112,4 +120,6 @@ class CNSD:
             self._ensure_fitted(data)
             return self._engine.scm
         except Exception as e:
-            raise RuntimeError(f'SCM API failed: {str(e)}')
+            raise RuntimeError(
+                f'SCM API failed: {str(e)}'
+            ) from e

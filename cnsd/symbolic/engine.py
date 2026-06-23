@@ -55,7 +55,6 @@ class PhysicsRuleEngine:
         }
 
     def _verdict(self, family, phys_family, strength):
-        normal_family = family in (None, 'Normal') and family == 'Normal'
         if family == 'Normal':
             return 'CONFIRMED' if strength < self.tau else 'CONFLICT'
         if strength < self.tau:

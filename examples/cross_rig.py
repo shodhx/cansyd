@@ -25,7 +25,6 @@ CWRU_TO_SUPER = {0: 0, 1: -1, 2: -1, 3: -1, 4: 1, 5: 1, 6: 1, 7: 2, 8: 2, 9: 2}
 def collapse_to_super(cwru_probs):
     """Collapse a 10-class softmax to a 3-superclass prediction (Normal/Inner/Outer)."""
     probs = np.asarray(cwru_probs)
-    super_logits = np.full((len(probs), 3), -np.inf)
     agg = np.zeros((len(probs), 3))
     for cwru_cls, sup in CWRU_TO_SUPER.items():
         if sup >= 0:
