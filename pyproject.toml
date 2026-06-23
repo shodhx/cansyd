@@ -1,0 +1,40 @@
+# Tool configuration only.
+#
+# Packaging is still handled by setup.py, the developer tooling (Ruff, pytest) in their standard modern location.
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+# Directories that are generated, vendored, or not part of the package source.
+extend-exclude = ["build", "dist", "*.egg-info", "experiments_archive"]
+
+[tool.ruff.lint]
+# A pragmatic, not maximal, rule set. Catches the real bug classes this project
+# has actually hit (unused/undefined imports, name errors) without drowning a
+# research codebase in stylistic noise.
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes (unused imports, undefined names, the bugs we kept hitting)
+    "I",   # import sorting
+    "B",   # flake8-bugbear (likely-bug patterns)
+    "UP",  # pyupgrade (modernize syntax)
+    "W",   # pycodestyle warnings
+]
+ignore = [
+    "E501",  # line length is enforced by the formatter, not the linter
+    "B008",  # function calls in argument defaults (common, intentional here)
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Test files and examples may use imports for side effects / fixtures.
+"test/*" = ["F401", "F811"]
+"examples/*" = ["F401"]
+
+[tool.ruff.format]
+quote-style = "single"
+docstring-code-format = true
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
+python_files = ["test_*.py", "*_test.py"]
+addopts = "-v"

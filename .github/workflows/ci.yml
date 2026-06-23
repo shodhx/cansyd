@@ -1,0 +1,99 @@
+name: CI
+
+# Runs on every push to main and every pull request targeting main.
+# Scope is deliberate: dependency-light unit tests and import checks only.
+# The full experiments (CNN training, DoWhy counterfactuals, cross-domain runs)
+# require TensorFlow, DoWhy, a GPU, and licensed datasets that are not available
+# in CI. Those are run on a workstation and recorded in EXPERIMENTS.md.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: tests (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install core dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Run unit tests
+        run: pytest test/ -v
+
+  import-independence:
+    name: import-independence (no TensorFlow)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install core dependencies only
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Assert TensorFlow is absent
+        run: |
+          python - <<'PY'
+          import importlib.util, sys
+          if importlib.util.find_spec("tensorflow") is not None:
+              sys.exit("TensorFlow is installed; this job must run without it.")
+          print("confirmed: TensorFlow not installed")
+          PY
+
+      - name: Import dependency-light subpackages
+        run: |
+          python - <<'PY'
+          import importlib
+          for mod in ("cnsd.causal", "cnsd.physics", "cnsd.config", "cnsd.scm"):
+              importlib.import_module(mod)
+              print(f"imported {mod} without TensorFlow")
+          PY
+
+  install:
+    name: editable install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install package (editable, core extras)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Import installed package
+        run: python -c "import cnsd; print('cnsd installed and importable')"
