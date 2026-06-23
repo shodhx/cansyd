@@ -5,7 +5,8 @@ engine consumes: a PhysicsProvider and a taxonomy. The engine never reads the
 config; it only ever sees these resolved objects. Adding a domain means
 registering a provider and a geometry resolver here - no engine change.
 """
-from cnsd.physics.providers import get_provider, SpectralProvider
+
+from cnsd.physics.providers import SpectralProvider, get_provider
 
 # Named bearing geometries, so a config can say bearing_type: "6205-2RS" instead
 # of spelling out the geometry. Extend freely; unknown names fall back to
@@ -19,12 +20,20 @@ _BEARING_GEOMETRY = {
 
 # Map common family aliases to the canonical names the providers use.
 _FAMILY_ALIASES = {
-    'inner': 'Inner Race', 'inner race': 'Inner Race', 'ir': 'Inner Race',
+    'inner': 'Inner Race',
+    'inner race': 'Inner Race',
+    'ir': 'Inner Race',
     'inner_race': 'Inner Race',
-    'outer': 'Outer Race', 'outer race': 'Outer Race', 'or': 'Outer Race',
+    'outer': 'Outer Race',
+    'outer race': 'Outer Race',
+    'or': 'Outer Race',
     'outer_race': 'Outer Race',
-    'ball': 'Ball', 'rolling element': 'Ball', 're': 'Ball',
-    'normal': 'Normal', 'healthy': 'Normal', 'none': 'Normal',
+    'ball': 'Ball',
+    'rolling element': 'Ball',
+    're': 'Ball',
+    'normal': 'Normal',
+    'healthy': 'Normal',
+    'none': 'Normal',
 }
 
 
@@ -98,8 +107,9 @@ def _resolve_bearing_geometry(params):
     if bt in _BEARING_GEOMETRY:
         return _BEARING_GEOMETRY[bt]
     raise ValueError(
-        f"Bearing geometry unknown for bearing_type={bt!r}. Add it to "
-        f"_BEARING_GEOMETRY or provide physics.parameters.geometry explicitly.")
+        f'Bearing geometry unknown for bearing_type={bt!r}. Add it to '
+        f'_BEARING_GEOMETRY or provide physics.parameters.geometry explicitly.'
+    )
 
 
 def _coerce_int_keys(d):

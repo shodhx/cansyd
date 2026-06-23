@@ -5,9 +5,14 @@ PhysicsProvider (bearing, spectral, or any registered domain) and a taxonomy
 that maps classifier labels to fault families. It returns a verdict
 (CONFIRMED / CONFLICT / INCONCLUSIVE) and a root cause from the provider.
 """
+
 PROMINENCE_THRESHOLD = 3.0
-_ACTION = {'Low': 'Schedule inspection.', 'Medium': 'Reduce load and inspect.',
-           'High': 'Immediate shutdown and replacement.', 'None': 'Continue monitoring.'}
+_ACTION = {
+    'Low': 'Schedule inspection.',
+    'Medium': 'Reduce load and inspect.',
+    'High': 'Immediate shutdown and replacement.',
+    'None': 'Continue monitoring.',
+}
 
 
 class PhysicsRuleEngine:
@@ -21,7 +26,7 @@ class PhysicsRuleEngine:
 
     def __init__(self, provider, taxonomy=None, prominence_threshold=PROMINENCE_THRESHOLD):
         if provider is None:
-            raise ValueError("PhysicsRuleEngine requires a PhysicsProvider.")
+            raise ValueError('PhysicsRuleEngine requires a PhysicsProvider.')
         self.provider = provider
         self.taxonomy = taxonomy or {}
         self.tau = prominence_threshold

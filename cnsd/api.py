@@ -5,7 +5,8 @@ This module provides a clean, domain-agnostic wrapper over the internal
 diagnosis, causal, refutation, SCM, and counterfactual reasoning engines.
 """
 
-from typing import Dict, Any, Optional
+from typing import Any
+
 from cnsd.config import load_config
 from cnsd.diagnosis.system import CNSD as InternalEngine
 
@@ -13,11 +14,11 @@ from cnsd.diagnosis.system import CNSD as InternalEngine
 class CNSD:
     """
     Public Framework Entry Point.
-    
+
     Initializes the end-to-end framework dynamically from a YAML configuration.
     """
 
-    def __init__(self, config: str = "cnsd_config.yaml"):
+    def __init__(self, config: str = 'cnsd_config.yaml'):
         """
         Args:
             config: Path to the YAML configuration file defining the domain.
@@ -25,8 +26,8 @@ class CNSD:
         try:
             self.config = load_config(config)
         except Exception as e:
-            raise ValueError(f"Failed to load configuration from {config}: {str(e)}")
-        
+            raise ValueError(f'Failed to load configuration from {config}: {str(e)}')
+
         # We pass the domain-agnostic config directly to the internal engine
         # so it can be utilized deeply during internal physics refactoring.
         self._engine = InternalEngine(config=self.config)
@@ -45,16 +46,16 @@ class CNSD:
 
         Args:
             data: Dataset object containing time-series signals and operating conditions.
-            
+
         Returns:
-            DiagnosisReport: A structured report containing predicted faults, 
+            DiagnosisReport: A structured report containing predicted faults,
                              confidence scores, and actionable maintenance metadata.
         """
         try:
             self._ensure_fitted(data)
             return self._engine.diagnose(data)
         except Exception as e:
-            raise RuntimeError(f"Diagnosis API failed: {str(e)}")
+            raise RuntimeError(f'Diagnosis API failed: {str(e)}')
 
     def explain(self, data) -> Any:
         """
@@ -63,7 +64,7 @@ class CNSD:
 
         Args:
             data: Dataset object containing signals and conditions.
-            
+
         Returns:
             Intervention effect summary containing estimated causal effects
             and identified confounders.
@@ -72,9 +73,9 @@ class CNSD:
             self._ensure_fitted(data)
             return self._engine.condition_effect(data)
         except Exception as e:
-            raise RuntimeError(f"Causal Analysis API failed: {str(e)}")
+            raise RuntimeError(f'Causal Analysis API failed: {str(e)}')
 
-    def what_if(self, data, intervention: Dict[str, float], unit_index: int = 0) -> Any:
+    def what_if(self, data, intervention: dict[str, float], unit_index: int = 0) -> Any:
         """
         Counterfactual API: Exposes Pearl's Rung-3 reasoning.
         Predicts what the fault status *would have been* if the operating condition
@@ -85,7 +86,7 @@ class CNSD:
             intervention: A dictionary mapping the condition variables to hypothetical values.
                           (e.g., {"load": 0.8, "temperature": 40.0})
             unit_index: The specific machine index in the dataset to run the counterfactual on.
-            
+
         Returns:
             Counterfactual prediction result.
         """
@@ -94,7 +95,7 @@ class CNSD:
             # Pass the entire intervention dictionary down to the engine
             return self._engine.what_if(data, unit_index=unit_index, condition_cf=intervention)
         except Exception as e:
-            raise RuntimeError(f"Counterfactual API failed: {str(e)}")
+            raise RuntimeError(f'Counterfactual API failed: {str(e)}')
 
     def scm_analysis(self, data) -> Any:
         """
@@ -102,7 +103,7 @@ class CNSD:
 
         Args:
             data: Dataset object.
-            
+
         Returns:
             The underlying DoWhy/NetworkX Structural Causal Model object containing
             structural relationships and graph information.
@@ -111,4 +112,4 @@ class CNSD:
             self._ensure_fitted(data)
             return self._engine.scm
         except Exception as e:
-            raise RuntimeError(f"SCM API failed: {str(e)}")
+            raise RuntimeError(f'SCM API failed: {str(e)}')
