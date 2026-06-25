@@ -18,6 +18,7 @@ to return X (n,1024), y (n,), cond (n,) - the only dataset-specific code here.
 """
 
 import numpy as np
+import tensorflow as tf
 
 from cnsd import Dataset
 from cnsd.causal import signal_kurtosis
@@ -79,7 +80,7 @@ def load_cwru():
             dir_path = os.path.join(fault_dir, ftype, size)
             if not os.path.exists(dir_path):
                 continue
-            for root, dirs, files in os.walk(dir_path):
+            for root, _dirs, files in os.walk(dir_path):
                 for f in files:
                     if f.endswith('.mat'):
                         load = int(f.split('_')[-1].split('.')[0])
@@ -123,7 +124,7 @@ def headline_accuracy_by_verdict(report, y_true):
         if m.any():
             out[v] = {'n': int(m.sum()), 'cnn_accuracy': float(correct[m].mean())}
     return out
-import tensorflow as tf
+
 
 def main():
     np.random.seed(42)
@@ -230,9 +231,11 @@ def main():
     examples = []
     for idx, r in enumerate(report.records):
         y_true = test_data.y[idx]
-        if r["physics_verdict"] == "CONFIRMED" and y_true > 0:
+        if r['physics_verdict'] == 'CONFIRMED' and y_true > 0:
             if y_true not in seen_classes:
-                examples.append(f'    [Class {y_true}] [{r["status"]}] {r["root_cause"]["statement"]}')
+                examples.append(
+                    f'    [Class {y_true}] [{r["status"]}] {r["root_cause"]["statement"]}'
+                )
                 seen_classes.add(y_true)
             if len(examples) >= 5:
                 break

@@ -1,4 +1,5 @@
 import numpy as np
+import tensorflow as tf
 
 from cnsd import Dataset
 from cnsd.diagnosis.system import CNSD
@@ -23,7 +24,6 @@ def add_awgn(signals, snr_db):
         noisy_signals[i] = sig + noise
     return noisy_signals
 
-import tensorflow as tf
 
 def main():
     np.random.seed(42)
