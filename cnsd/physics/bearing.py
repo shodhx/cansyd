@@ -9,9 +9,9 @@ frequency is direct physical evidence of that fault type.
 
 No learned parameters. Deterministic given the signal.
 """
+
 import numpy as np
 from scipy.signal import hilbert
-
 
 # ── Bearing geometry: CWRU 6205-2RS JEM SKF deep-groove ball bearing ──────────
 # (drive-end bearing). Geometry is fixed; characteristic frequencies scale with
@@ -19,8 +19,8 @@ from scipy.signal import hilbert
 # at 1797 rpm).
 BEARING_6205 = {
     'n_balls': 9,
-    'd_ball': 0.3126,    # inches
-    'd_pitch': 1.537,    # inches
+    'd_ball': 0.3126,  # inches
+    'd_pitch': 1.537,  # inches
     'contact_angle': 0.0,
 }
 
@@ -45,12 +45,12 @@ def characteristic_frequencies(rpm, bearing=BEARING_6205):
     ratio = (d / D) * np.cos(theta)
     bpfo = (n / 2.0) * fr * (1 - ratio)
     bpfi = (n / 2.0) * fr * (1 + ratio)
-    bsf_single = (D / (2.0 * d)) * fr * (1 - ratio ** 2)
+    bsf_single = (D / (2.0 * d)) * fr * (1 - ratio**2)
     return {
         'fr': fr,
         'BPFO': bpfo,
         'BPFI': bpfi,
-        'BSF': 2.0 * bsf_single,   # defect strikes both races per spin
+        'BSF': 2.0 * bsf_single,  # defect strikes both races per spin
         'FTF': (fr / 2.0) * (1 - ratio),
     }
 
@@ -63,7 +63,7 @@ def envelope_spectrum(signal, fs=CWRU_FS):
     """
     x = np.asarray(signal, float).flatten()
     env = np.abs(hilbert(x))
-    env = env - env.mean()                 # drop DC so it doesn't dominate
+    env = env - env.mean()  # drop DC so it doesn't dominate
     n = len(env)
     mag = np.abs(np.fft.rfft(env))
     freqs = np.fft.rfftfreq(n, d=1.0 / fs)
@@ -102,6 +102,6 @@ def fault_frequency_evidence(signal, rpm, fs=CWRU_FS, bearing=BEARING_6205):
     return {
         'BPFO': band_energy(freqs, mag, cf['BPFO']),  # outer race evidence
         'BPFI': band_energy(freqs, mag, cf['BPFI']),  # inner race evidence
-        'BSF':  band_energy(freqs, mag, cf['BSF']),   # ball evidence
+        'BSF': band_energy(freqs, mag, cf['BSF']),  # ball evidence
         'freqs_hz': {k: float(v) for k, v in cf.items()},
     }

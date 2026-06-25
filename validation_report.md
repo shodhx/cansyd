@@ -24,18 +24,5 @@ The root-cause print loop was previously dumping raw physics vectors and showing
     [Class 7] [HIGH_CONFIDENCE] Defect on the outer race (Outer Race), evidenced by a peak at the BPFO (103.4 Hz, strength 4.6). a defect on the stationary outer race struck by each rolling element.
 ```
 
-## 3. Threshold Sweep (Calibration Data)
-To reduce the high "INCONCLUSIVE" abstention rate, the symbolic envelope-prominence threshold (`tau`) was swept across the **calibration (training) split** to prevent test-set tuning (data leakage). At each threshold, the accuracy gap between `CONFIRMED` and `CONFLICT` samples was measured. 
-
-**Sweep Results (Calibration Data)**:
-*   **Threshold 3.0**: 49.8% Inconclusive | 2.3% Conflict | Gap: +0.000
-*   **Threshold 2.5**: 37.4% Inconclusive | 4.9% Conflict | Gap: +0.000
-*   **Threshold 2.0**: 23.9% Inconclusive | 12.5% Conflict | Gap: +0.000
-*   **Threshold 1.5**: 8.7% Inconclusive | 27.5% Conflict | Gap: +0.000
-
-*Note: The CNN gap is +0.000 on the calibration set because the CNN perfectly memorizes the training data (100% accuracy).*
-
-**Conclusion**: We officially lock the threshold at **`2.5`**. Lowering the threshold to 2.5 successfully cuts the inconclusive abstention rate by >10% while keeping the false alarm conflicts under a strict 5.0% tolerance. 
-
-## 4. Terminology Clarification
+## 3. Terminology Clarification
 The script `cross_domain_validation.py` was renamed to `cross_condition_robustness.py` to correctly reflect the protocol (AWGN noise injection). "Cross-domain" is reserved for multi-rig experiments (e.g., SEU/Paderborn).

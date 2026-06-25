@@ -1,0 +1,38 @@
+name: Lint
+
+# Static checks: Ruff handles both linting and formatting in a single tool.
+# Fast (seconds), no project dependencies needed, runs on every push and PR.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ruff:
+    name: ruff (lint + format)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ruff
+        run: pip install ruff
+
+      # Linting: flags unused imports, undefined names, common bugs.
+      - name: Ruff lint
+        run: ruff check .
+
+      # Formatting: verifies code matches the formatter (does not modify it).
+      # Run `ruff format .` locally to fix before pushing.
+      - name: Ruff format check
+        run: ruff format --check .

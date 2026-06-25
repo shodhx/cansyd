@@ -2,12 +2,14 @@
 Optional DoWhy-based identification + refutation for the causal layer.
 
 """
+
 import numpy as np
 
 
 def dowhy_available():
     try:
         import dowhy  # noqa: F401
+
         return True
     except Exception:
         return False
@@ -27,11 +29,13 @@ def refute_condition_effect(condition, fault, extra_confounders=None):
     if not dowhy_available():
         # graceful fallback: report that the built-in placebo test stands in
         from cnsd.causal.estimators import placebo_test
+
         p, ratio = placebo_test(condition, fault, None)
         return {
             'backend': 'builtin (DoWhy not installed)',
             'note': 'install dowhy for full identification + refutation suite',
-            'placebo_p_value': p, 'placebo_ratio': ratio,
+            'placebo_p_value': p,
+            'placebo_ratio': ratio,
         }
 
     import pandas as pd
@@ -48,12 +52,15 @@ def refute_condition_effect(condition, fault, extra_confounders=None):
     # The corrected DAG (core/scm.py): Z -> Y is the interventional contrast;
     # any measured confounders are common causes of Z and Y.
     graph_edges = ['Z -> Y'] + [f'{c} -> Z' for c in confs] + [f'{c} -> Y' for c in confs]
-    model = CausalModel(data=df, treatment='Z', outcome='Y',
-                        common_causes=confs if confs else None,
-                        graph='\n'.join(graph_edges))
+    model = CausalModel(
+        data=df,
+        treatment='Z',
+        outcome='Y',
+        common_causes=confs if confs else None,
+        graph='\n'.join(graph_edges),
+    )
     estimand = model.identify_effect(proceed_when_unidentifiable=True)
-    estimate = model.estimate_effect(
-        estimand, method_name='backdoor.linear_regression')
+    estimate = model.estimate_effect(estimand, method_name='backdoor.linear_regression')
 
     # REFUTATION SUITE - the part that adds real credibility
     refutations = {}
@@ -66,7 +73,9 @@ def refute_condition_effect(condition, fault, extra_confounders=None):
             r = model.refute_estimate(estimand, estimate, method_name=method)
             refutations[name] = {
                 'new_effect': float(getattr(r, 'new_effect', np.nan)),
-                'p_value': getattr(r, 'refutation_result', {}) if hasattr(r, 'refutation_result') else None,
+                'p_value': getattr(r, 'refutation_result', {})
+                if hasattr(r, 'refutation_result')
+                else None,
                 'summary': str(r),
             }
         except Exception as e:
@@ -77,7 +86,9 @@ def refute_condition_effect(condition, fault, extra_confounders=None):
         'estimand': str(estimand),
         'estimate': float(estimate.value),
         'refutations': refutations,
-        'interpretation': ('a robust estimate barely changes under '
-                           'random_common_cause and data_subset, and collapses '
-                           'toward zero under placebo_treatment'),
+        'interpretation': (
+            'a robust estimate barely changes under '
+            'random_common_cause and data_subset, and collapses '
+            'toward zero under placebo_treatment'
+        ),
     }

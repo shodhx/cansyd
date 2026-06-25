@@ -1,19 +1,23 @@
 """Smoke tests for the CNSD layers (no TensorFlow / DoWhy required)."""
+
 import numpy as np
+
+from cnsd.causal import intervention_effect_of_condition
+from cnsd.consensus import fuse
 from cnsd.physics import characteristic_frequencies
 from cnsd.physics.providers import BearingProvider, SpectralProvider, get_provider
 from cnsd.symbolic import PhysicsRuleEngine
-from cnsd.causal import intervention_effect_of_condition
-from cnsd.consensus import fuse
 
 _BEARING = {'n_balls': 9, 'd_ball': 0.3126, 'd_pitch': 1.537, 'contact_angle': 0.0}
 _TAXONOMY = {0: ('Normal', 'None'), 5: ('Inner Race', 'Medium'), 8: ('Outer Race', 'Medium')}
 
 
 def _impulse(freq, fs=12000, n=1024, a=6.0):
-    p = int(fs / freq); s = np.zeros(n)
+    p = int(fs / freq)
+    s = np.zeros(n)
     for i in range(0, n, p):
-        d = np.exp(-(np.arange(min(p, n - i))) / 25.0); s[i:i+len(d)] += a * d
+        d = np.exp(-(np.arange(min(p, n - i))) / 25.0)
+        s[i : i + len(d)] += a * d
     return s + 0.3 * np.random.randn(n)
 
 
@@ -29,14 +33,18 @@ def test_physics_frequencies_match_published_cwru():
 
 
 def test_symbolic_confirms_matching_fault():
-    r = _bearing_engine().diagnose(_impulse(characteristic_frequencies(1797, bearing=_BEARING)['BPFI']), 5, 0)
+    r = _bearing_engine().diagnose(
+        _impulse(characteristic_frequencies(1797, bearing=_BEARING)['BPFI']), 5, 0
+    )
     assert r['verdict'] == 'CONFIRMED'
     assert r['predicted_family'] == 'Inner Race'
 
 
 def test_symbolic_conflicts_when_physics_disagrees():
     # inner-race signal but the classifier said outer race (class 8)
-    r = _bearing_engine().diagnose(_impulse(characteristic_frequencies(1797, bearing=_BEARING)['BPFI']), 8, 0)
+    r = _bearing_engine().diagnose(
+        _impulse(characteristic_frequencies(1797, bearing=_BEARING)['BPFI']), 8, 0
+    )
     assert r['verdict'] == 'CONFLICT'
     # root cause follows the physics, overriding the classifier
     assert r['root_cause']['fault_type'] == 'Inner Race'
@@ -56,7 +64,8 @@ def test_get_provider_falls_back_to_spectral():
 
 
 def test_causal_doZ_is_rung2():
-    y = np.random.binomial(1, 0.6, 500); cond = np.random.choice([0, 1, 2, 3], 500)
+    y = np.random.binomial(1, 0.6, 500)
+    cond = np.random.choice([0, 1, 2, 3], 500)
     assert intervention_effect_of_condition(y, cond, n_perm=50)['rung'] == 2
 
 

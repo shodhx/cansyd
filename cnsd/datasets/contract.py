@@ -12,12 +12,12 @@ A dataset provides:
 Built-in adapters wrap the existing CWRU/JNU/SEU/Paderborn loaders into this
 contract, but ANY user array can be wrapped with Dataset.from_arrays(...).
 """
+
+from dataclasses import dataclass
+
 import numpy as np
+
 from cnsd.physics.configs import PhysicsConfig
-from dataclasses import dataclass, field
-from typing import Optional, Dict, Callable
-
-
 
 
 @dataclass
@@ -25,12 +25,13 @@ class Dataset:
     """The universal CNSD dataset object. Hold the data + the physics needed to
     interpret it. The pipeline consumes ONLY this - never a dataset-specific API.
     """
+
     X: np.ndarray
     y: np.ndarray
     cond: np.ndarray
     fs: int
-    physics: Optional[PhysicsConfig] = None
-    taxonomy: Optional[Dict] = None
+    physics: PhysicsConfig | None = None
+    taxonomy: dict | None = None
     name: str = 'dataset'
 
     def __post_init__(self):
@@ -40,8 +41,7 @@ class Dataset:
         if self.X.ndim == 2:
             self.X = self.X[..., np.newaxis]
         n = len(self.X)
-        assert len(self.y) == n and len(self.cond) == n, \
-            "X, y, cond must have the same length"
+        assert len(self.y) == n and len(self.cond) == n, 'X, y, cond must have the same length'
 
     @property
     def has_physics(self):
@@ -60,12 +60,11 @@ class Dataset:
     def summary(self):
         classes = sorted(np.unique(self.y).tolist())
         conds = sorted(np.unique(self.cond).tolist())
-        return (f"Dataset '{self.name}': {len(self.X)} samples, window={self.window}, "
-                f"fs={self.fs}Hz, classes={classes}, conditions={conds}, "
-                f"physics={'yes' if self.has_physics else 'NO (geometry-free fallback)'}")
+        return (
+            f"Dataset '{self.name}': {len(self.X)} samples, window={self.window}, "
+            f'fs={self.fs}Hz, classes={classes}, conditions={conds}, '
+            f'physics={"yes" if self.has_physics else "NO (geometry-free fallback)"}'
+        )
 
 
 # ── Built-in physics configs for the bundled datasets ───────────────────────
-
-
-

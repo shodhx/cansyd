@@ -26,16 +26,16 @@ CNSD_DAG = {
         'Z': 'operating condition (load / speed) - manipulable',
     },
     'edges': [
-        ('H', 'X'),   # health manifests in vibration
-        ('H', 'Y'),   # health determines the fault label
-        ('Z', 'X'),   # operating condition modulates the measurement
+        ('H', 'X'),  # health manifests in vibration
+        ('H', 'Y'),  # health determines the fault label
+        ('Z', 'X'),  # operating condition modulates the measurement
     ],
     'no_edge': [
-        ('X', 'Y'),   # vibration does NOT cause faults (the corrected arrow)
+        ('X', 'Y'),  # vibration does NOT cause faults (the corrected arrow)
     ],
     'intervention_target': 'Z',
     'estimand': 'E[Y | do(Z)] contrasts across operating conditions, '
-                'backdoor-adjusted; tested for invariance.',
+    'backdoor-adjusted; tested for invariance.',
     'rung': 2,
     'rung3_claimed': False,
 }
@@ -49,7 +49,7 @@ def describe():
         lines.append(f'  {n}: {desc}')
     lines.append('  edges: ' + ', '.join(f'{a}->{b}' for a, b in d['edges']))
     lines.append('  explicitly NO edge: ' + ', '.join(f'{a}->{b}' for a, b in d['no_edge']))
-    lines.append(f"  intervention target: do({d['intervention_target']})")
-    lines.append(f"  estimand: {d['estimand']}")
-    lines.append(f"  Pearl rung: {d['rung']} (Rung 3 claimed: {d['rung3_claimed']})")
+    lines.append(f'  intervention target: do({d["intervention_target"]})')
+    lines.append(f'  estimand: {d["estimand"]}')
+    lines.append(f'  Pearl rung: {d["rung"]} (Rung 3 claimed: {d["rung3_claimed"]})')
     return '\n'.join(lines)
