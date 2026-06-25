@@ -18,6 +18,7 @@ to return X (n,1024), y (n,), cond (n,) - the only dataset-specific code here.
 """
 
 import numpy as np
+import tensorflow as tf
 
 from cnsd import Dataset
 from cnsd.causal import signal_kurtosis
@@ -79,11 +80,11 @@ def load_cwru():
             dir_path = os.path.join(fault_dir, ftype, size)
             if not os.path.exists(dir_path):
                 continue
-            for f in os.listdir(dir_path):
-                if f.endswith('.mat'):
-                    load = int(f.split('_')[-1].split('.')[0])
-                    read_mat(os.path.join(dir_path, f), label, load)
-
+            for root, _dirs, files in os.walk(dir_path):
+                for f in files:
+                    if f.endswith('.mat'):
+                        load = int(f.split('_')[-1].split('.')[0])
+                        read_mat(os.path.join(root, f), label, load)
     return np.array(X, dtype=np.float32), np.array(y), np.array(cond)
 
 
@@ -126,6 +127,9 @@ def headline_accuracy_by_verdict(report, y_true):
 
 
 def main():
+    np.random.seed(42)
+    tf.random.set_seed(42)
+
     print('=' * 68)
     print('CNSD VALIDATION RUN (CWRU, Protocol B)')
     print('=' * 68)
@@ -222,9 +226,21 @@ def main():
         )
 
     # 7. example auditable diagnoses
-    print('\n[examples] auditable root-cause diagnoses:')
-    for r in report.records[:5]:
-        print(f'    [{r["status"]}] {r["root_cause"]["statement"]}')
+    print('\n[examples] auditable root-cause diagnoses (CONFIRMED faults only):')
+    seen_classes = set()
+    examples = []
+    for idx, r in enumerate(report.records):
+        y_true = test_data.y[idx]
+        if r['physics_verdict'] == 'CONFIRMED' and y_true > 0:
+            if y_true not in seen_classes:
+                examples.append(
+                    f'    [Class {y_true}] [{r["status"]}] {r["root_cause"]["statement"]}'
+                )
+                seen_classes.add(y_true)
+            if len(examples) >= 5:
+                break
+    for ex in examples:
+        print(ex)
 
     print('\n' + '=' * 68)
     print('VALIDATION COMPLETE - if all sections printed, the pipeline runs end-to-end.')
