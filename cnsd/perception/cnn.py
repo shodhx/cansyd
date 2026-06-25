@@ -1,10 +1,13 @@
+import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers
-import numpy as np
+
 
 def build_cnn(input_shape, num_classes):
     inp = layers.Input(input_shape)
-    x = layers.Conv1D(16, 64, padding='same', kernel_regularizer=tf.keras.regularizers.l2(0.001))(inp)
+    x = layers.Conv1D(16, 64, padding='same', kernel_regularizer=tf.keras.regularizers.l2(0.001))(
+        inp
+    )
     x = layers.BatchNormalization()(x)
     x = layers.Activation('relu')(x)
     x = layers.MaxPooling1D(16)(x)
@@ -26,12 +29,14 @@ def build_cnn(input_shape, num_classes):
     out = layers.Dense(num_classes, activation='softmax')(x)
     return tf.keras.Model(inp, out)
 
+
 def patchify(X, num_patches=8):
     batch_size = tf.shape(X)[0]
     seq_len = tf.shape(X)[1]
     patch_size = seq_len // num_patches
     patches = tf.reshape(X, [batch_size, num_patches, patch_size, 1])
     return patches
+
 
 def build_jepa_encoder(patch_dim, encoder_dim):
     inp = layers.Input((patch_dim, 1))
@@ -41,6 +46,7 @@ def build_jepa_encoder(patch_dim, encoder_dim):
     x = layers.GlobalAveragePooling1D()(x)
     x = layers.Dense(encoder_dim)(x)
     return tf.keras.Model(inp, x)
+
 
 def vicreg_loss(z1, z2, lam=25.0, mu=25.0, nu=1.0):
     inv = tf.reduce_mean(tf.square(z1 - z2))
@@ -56,36 +62,37 @@ def vicreg_loss(z1, z2, lam=25.0, mu=25.0, nu=1.0):
     cov = tf.reduce_sum(tf.square(off_diag1)) + tf.reduce_sum(tf.square(off_diag2))
     return lam * inv + mu * var + nu * cov
 
+
 def train_jepa_backbone(X_train_all, y_train_all, epochs=15):
     """Encapsulates the S-JEPA training execution sequence to protect global scope imports"""
-    from sklearn.preprocessing import StandardScaler
     from sklearn.linear_model import LogisticRegression
+    from sklearn.preprocessing import StandardScaler
 
     encoder = build_jepa_encoder(128, 256)
     target_encoder = build_jepa_encoder(128, 256)
 
-    for w1, w2 in zip(encoder.weights, target_encoder.weights):
+    for w1, w2 in zip(encoder.weights, target_encoder.weights, strict=True):
         w2.assign(w1)
 
     optimizer = tf.keras.optimizers.Adam(0.001)
 
-    for epoch in range(epochs):
+    for _ in range(epochs):
         for i in range(0, len(X_train_all), 64):
-            batch = X_train_all[i:i+64]
+            batch = X_train_all[i : i + 64]
             p = patchify(batch)
             with tf.GradientTape() as tape:
                 z1 = encoder(p[:, 0], training=True)
                 z2 = target_encoder(p[:, 1], training=False)
                 loss = vicreg_loss(z1, z2)
             grads = tape.gradient(loss, encoder.trainable_weights)
-            optimizer.apply_gradients(zip(grads, encoder.trainable_weights))
-            
-            for w1, w2 in zip(encoder.weights, target_encoder.weights):
+            optimizer.apply_gradients(zip(grads, encoder.trainable_weights, strict=True))
+
+            for w1, w2 in zip(encoder.weights, target_encoder.weights, strict=True):
                 w2.assign(0.99 * w2 + 0.01 * w1)
 
     jepa_embeddings = []
     for i in range(0, len(X_train_all), 64):
-        batch = X_train_all[i:i+64]
+        batch = X_train_all[i : i + 64]
         p = patchify(batch)
         e = [encoder(p[:, j], training=False) for j in range(8)]
         jepa_embeddings.append(tf.reduce_mean(tf.stack(e, axis=1), axis=1).numpy())
@@ -98,14 +105,20 @@ def train_jepa_backbone(X_train_all, y_train_all, epochs=15):
 
     return encoder, probe, scaler
 
+
 def _train_cnn(X, y, num_classes, epochs=30, seed=42):
     """Train the 1D CNN classifier and return the fitted model."""
     import tensorflow as tf
+
     tf.random.set_seed(seed)
     import numpy as np
+
     np.random.seed(seed)
     model = build_cnn(input_shape=(X.shape[1], 1), num_classes=num_classes)
-    model.compile(optimizer=tf.keras.optimizers.Adam(1e-3),
-                  loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(1e-3),
+        loss='sparse_categorical_crossentropy',
+        metrics=['accuracy'],
+    )
     model.fit(X, y, epochs=epochs, batch_size=64, verbose=0, validation_split=0.1)
     return model

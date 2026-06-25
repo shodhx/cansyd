@@ -10,12 +10,14 @@ Pearl Rung-3 counterfactuals via DoWhy gcm.
                  unit-level counterfactual outcome.
 
 """
+
 import numpy as np
 
 
 def dowhy_gcm_available():
     try:
         from dowhy import gcm  # noqa: F401
+
         return True
     except Exception:
         return False
@@ -34,11 +36,13 @@ def build_scm(condition, signal_feature, fault_outcome):
     import pandas as pd
     from dowhy import gcm
 
-    df = pd.DataFrame({
-        'Z': np.asarray(condition, float),
-        'X': np.asarray(signal_feature, float),
-        'Y': (np.asarray(fault_outcome) > 0).astype(float),
-    })
+    df = pd.DataFrame(
+        {
+            'Z': np.asarray(condition, float),
+            'X': np.asarray(signal_feature, float),
+            'Y': (np.asarray(fault_outcome) > 0).astype(float),
+        }
+    )
     # operational graph over the measured descriptor X (condition Z -> descriptor
     # X -> outcome Y); used to fit mechanisms for counterfactual queries on Z.
     graph = nx.DiGraph([('Z', 'X'), ('X', 'Y'), ('Z', 'Y')])
@@ -59,8 +63,7 @@ def counterfactual_for_unit(scm, observed_row, condition_cf):
     from dowhy import gcm
 
     observed = pd.DataFrame([observed_row])
-    cf = gcm.counterfactual_samples(
-        scm, {'Z': lambda z, v=condition_cf: v}, observed_data=observed)
+    cf = gcm.counterfactual_samples(scm, {'Z': lambda z, v=condition_cf: v}, observed_data=observed)
     return {
         'factual': {'Z': float(observed_row['Z']), 'Y': float(observed_row['Y'])},
         'counterfactual': {'Z': float(condition_cf), 'Y': float(cf['Y'].iloc[0])},
@@ -69,8 +72,9 @@ def counterfactual_for_unit(scm, observed_row, condition_cf):
     }
 
 
-def what_if(signal_feature_value, condition_actual, condition_cf,
-            scm=None, X_sample=None, factual_y=0.0):
+def what_if(
+    signal_feature_value, condition_actual, condition_cf, scm=None, X_sample=None, factual_y=0.0
+):
     """Counterfactual query for one unit.
 
     Returns a structural counterfactual (DoWhy gcm) when a fitted SCM is provided
@@ -78,19 +82,22 @@ def what_if(signal_feature_value, condition_actual, condition_cf,
     the 'method' field indicating which was used.
     """
     if scm is not None and dowhy_gcm_available():
-        row = {'Z': float(condition_actual), 'X': float(signal_feature_value),
-               'Y': float(factual_y)}  # Y filled by abduction; requires factual observation
+        row = {
+            'Z': float(condition_actual),
+            'X': float(signal_feature_value),
+            'Y': float(factual_y),
+        }  # Y filled by abduction; requires factual observation
         # abduction recovers noise from Z,X,Y; Y is recomputed counterfactually
         return counterfactual_for_unit(scm, row, condition_cf)
 
     from cnsd.counterfactual.sensitivity import local_sensitivity
+
     if X_sample is None:
         X_sample = np.array([signal_feature_value])
     s = local_sensitivity(X_sample, condition_actual, condition_cf)
     return {
         'factual': {'Z': float(condition_actual)},
-        'counterfactual': {'Z': float(condition_cf),
-                           'prob_change': s['prob_change']},
+        'counterfactual': {'Z': float(condition_cf), 'prob_change': s['prob_change']},
         'method': 'local_sensitivity',
         'note': 'install dowhy for structural counterfactuals',
     }

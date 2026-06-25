@@ -11,6 +11,10 @@ Run after the bearing baseline. Wire your SEU loader into load_seu() below - it
 is the only dataset-specific code. SEU gearset data: tab-separated, 8 channels,
 header ends at the line 'Data' (~line 16), 5 classes, 2 operating conditions.
 """
+
+import glob
+import os
+
 import numpy as np
 
 from cnsd import Dataset
@@ -18,15 +22,14 @@ from cnsd.diagnosis.system import CNSD
 from cnsd.physics.configs import PhysicsConfig
 from cnsd.physics.providers.gear import GearProvider
 
-
 # ── SEU gearbox parameters ───────────────────────────────────────────────────
 # Replace N_TEETH_INPUT with the actual driving-gear tooth count of the SEU rig.
 # The SEU bench uses a planetary + parallel gearbox; use the parallel-stage
 # driving gear tooth count for the gearset experiments. Confirm from the dataset
 # documentation and set it here.
-N_TEETH_INPUT = 20            # <-- CONFIRM against SEU rig spec
-SEU_FS = 5120                 # sampling rate (Hz) - confirm against your files
-SEU_COND_TO_RPM = {0: 1800, 1: 1800}   # SEU '20_0' and '30_2' conditions -> rpm
+N_TEETH_INPUT = 20  # <-- CONFIRM against SEU rig spec
+SEU_FS = 20000  # sampling rate (Hz) - confirm against your files
+SEU_COND_TO_RPM = {0: 1800, 1: 1800}  # SEU '20_0' and '30_2' conditions -> rpm
 
 # SEU 5-class taxonomy (gearset). Map your integer labels to these families.
 SEU_TAXONOMY = {
@@ -49,15 +52,62 @@ def load_seu():
     containing 'Data' (~line 16), data starts the next line. Pick one channel
     (pre-commit to it before seeing results - no channel cherry-picking).
     """
-    raise NotImplementedError(
-        "Wire the SEU gearset loader here: return X (n,1024), y (n,), cond (n,). "
-        "Tab-separated, 8 channels, header ends at the 'Data' line; pick a fixed "
-        "channel up front.")
+    base_dir = r'E:\301\SEU-dataset\gearbox\gearset'
+
+    label_map = {'Health': 0, 'Chipped': 1, 'Miss': 2, 'Root': 3, 'Surface': 4}
+    X_list, y_list, cond_list = [], [], []
+
+    for filepath in glob.glob(os.path.join(base_dir, '**', '*.csv'), recursive=True):
+        filename = os.path.basename(filepath)
+
+        cond_idx = 0 if '20_0' in filename else (1 if '30_2' in filename else None)
+        if cond_idx is None:
+            continue
+
+        label_idx = next((v for k, v in label_map.items() if filename.startswith(k)), None)
+        if label_idx is None:
+            continue
+
+        with open(filepath, encoding='utf-8', errors='ignore') as f:
+            lines = f.readlines()
+
+        data_start = next((i + 1 for i, line in enumerate(lines) if 'Data' in line), 0)
+
+        channel_data = []
+        for line in lines[data_start:]:
+            parts = line.strip().split('\t')
+            if len(parts) >= 8:
+                try:
+                    # Picking channel 2 (index 1: planetary gearbox vibration x)
+                    channel_data.append(float(parts[1]))
+                except ValueError:
+                    pass
+
+        channel_data = np.array(channel_data, dtype=np.float32)
+        n_windows = len(channel_data) // 1024
+        if n_windows == 0:
+            continue
+
+        windows = channel_data[: n_windows * 1024].reshape((n_windows, 1024))
+
+        means = windows.mean(axis=1, keepdims=True)
+        stds = windows.std(axis=1, keepdims=True)
+        stds[stds == 0] = 1.0
+        windows = (windows - means) / stds
+
+        X_list.append(windows)
+        y_list.extend([label_idx] * n_windows)
+        cond_list.extend([cond_idx] * n_windows)
+
+    if not X_list:
+        raise ValueError(f'No SEU dataset files found or parsed successfully in {base_dir}')
+
+    return np.vstack(X_list), np.array(y_list), np.array(cond_list)
 
 
 def headline_by_verdict(report, y_true):
     pred = np.array([r['predicted_class'] for r in report.records])
-    correct = (pred == np.asarray(y_true))
+    correct = pred == np.asarray(y_true)
     verd = np.array([r['physics_verdict'] for r in report.records])
     out = {}
     for v in ('CONFIRMED', 'CONFLICT', 'INCONCLUSIVE'):
@@ -73,20 +123,26 @@ def main():
     print('=' * 68)
 
     X, y, cond = load_seu()
-    X = np.asarray(X, np.float32); y = np.asarray(y); cond = np.asarray(cond)
+    X = np.asarray(X, np.float32)
+    y = np.asarray(y)
+    cond = np.asarray(cond)
 
     # gear physics config: the provider is built directly (no bearing geometry)
-    physics = PhysicsConfig(bearing=None, cond_to_rpm=SEU_COND_TO_RPM, fs=SEU_FS,
-                            name='SEU-gearset')
+    physics = PhysicsConfig(
+        bearing=None, cond_to_rpm=SEU_COND_TO_RPM, fs=SEU_FS, name='SEU-gearset'
+    )
     # train/test split by condition (cross-condition within the gear domain)
     te = cond == 1
     tr = ~te
-    train = Dataset.from_arrays(X[tr], y[tr], cond[tr], fs=SEU_FS,
-                                physics=physics, taxonomy=SEU_TAXONOMY, name='SEU_Train')
-    test = Dataset.from_arrays(X[te], y[te], cond[te], fs=SEU_FS,
-                               physics=physics, taxonomy=SEU_TAXONOMY, name='SEU_Test')
-    print(f'[data] train {len(train.X)}  test {len(test.X)}  '
-          f'classes={sorted(np.unique(y).tolist())}')
+    train = Dataset.from_arrays(
+        X[tr], y[tr], cond[tr], fs=SEU_FS, physics=physics, taxonomy=SEU_TAXONOMY, name='SEU_Train'
+    )
+    test = Dataset.from_arrays(
+        X[te], y[te], cond[te], fs=SEU_FS, physics=physics, taxonomy=SEU_TAXONOMY, name='SEU_Test'
+    )
+    print(
+        f'[data] train {len(train.X)}  test {len(test.X)}  classes={sorted(np.unique(y).tolist())}'
+    )
 
     # CNSD with the gear provider explicitly (config path also works via
     # domain.type: gear once you add a YAML)
@@ -94,7 +150,8 @@ def main():
     model.fit(train, epochs=30)
     # override the symbolic layer with the gear provider for this domain
     model.symbolic.provider = GearProvider(
-        n_teeth_input=N_TEETH_INPUT, cond_to_rpm=SEU_COND_TO_RPM, fs=SEU_FS)
+        n_teeth_input=N_TEETH_INPUT, cond_to_rpm=SEU_COND_TO_RPM, fs=SEU_FS
+    )
     model.symbolic.taxonomy = SEU_TAXONOMY
 
     report = model.diagnose(test)
