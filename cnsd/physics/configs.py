@@ -5,9 +5,9 @@ from dataclasses import dataclass
 
 @dataclass
 class PhysicsConfig:
-    bearing: dict[str, float]
     cond_to_rpm: dict
     fs: int
+    bearing: dict[str, float] | None = None
     name: str = 'custom'
 
 
@@ -25,4 +25,9 @@ JNU_PHYSICS = PhysicsConfig(
     name='JNU-N205',
 )
 
-SEU_PHYSICS = None
+SEU_PHYSICS = PhysicsConfig(
+    bearing=None,
+    cond_to_rpm={0: 1200, 1: 1800},
+    fs=20000,
+    name='SEU-Gearbox',
+)

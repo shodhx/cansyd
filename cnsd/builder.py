@@ -93,6 +93,15 @@ def build_provider(config):
         cond_to_rpm = _coerce_int_keys(params.get('motor_load_rpm', {0: 1797}))
         return provider_cls(bearing=geometry, cond_to_rpm=cond_to_rpm, fs=fs)
 
+    if domain_type == 'gear':
+        cond_to_rpm = _coerce_int_keys(params.get('motor_load_rpm', {0: 1800}))
+        return provider_cls(
+            n_teeth_input=params['n_teeth_input'],
+            n_teeth_output=params.get('n_teeth_output'),
+            cond_to_rpm=cond_to_rpm,
+            fs=fs,
+        )
+
     # other registered domains: pass parameters through + fs
     try:
         return provider_cls(fs=fs, **params)

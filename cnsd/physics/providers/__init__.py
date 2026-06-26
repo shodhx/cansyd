@@ -7,12 +7,14 @@ PhysicsProvider and registering it - no engine change.
 
 from cnsd.physics.providers.base import PhysicsProvider
 from cnsd.physics.providers.bearing import BearingProvider
+from cnsd.physics.providers.gear import GearProvider
 from cnsd.physics.providers.spectral import SpectralProvider
 
 # domain.type (from config) -> provider builder. 'spectral' is the universal
 # zero-knowledge fallback used when a domain has no dedicated provider.
 _REGISTRY = {
     'bearing': BearingProvider,
+    'gear': GearProvider,
     'spectral': SpectralProvider,
     None: SpectralProvider,
 }
