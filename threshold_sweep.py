@@ -72,7 +72,6 @@ def main():
     print('-' * 68)
 
     taus = np.arange(1.0, 4.1, 0.5)
-    best_tau = None
     best_gap = -np.inf
 
     for tau in taus:
@@ -102,7 +101,6 @@ def main():
 
         if gap > best_gap and yield_rate > 0.05:
             best_gap = gap
-            best_tau = float(tau)
 
     print('\n=> Calibration set saturated (gap=0.000 for all). Defaulting to floor: tau = 1.0')
     print('=> CNN is frozen. Testing robustness across multiple thresholds on Load 3.')
