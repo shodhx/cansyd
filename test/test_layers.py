@@ -72,3 +72,34 @@ def test_causal_doZ_is_rung2():
 def test_consensus_conflict_forces_review():
     assert fuse('CONFLICT', 0.99) == 'MANUAL_REVIEW'
     assert fuse('CONFIRMED', 0.99) == 'HIGH_CONFIDENCE'
+
+
+# ── gear domain (cross-domain universality) ──────────────────────────────────
+
+
+def test_gear_mesh_frequency_math():
+    from cnsd.physics.gear import gear_mesh_frequencies
+
+    gf = gear_mesh_frequencies(1800, 20)  # 20 teeth at 1800 rpm (30 Hz)
+    assert abs(gf['GMF'] - 600.0) < 0.1
+    assert abs(gf['shaft_input'] - 30.0) < 0.1
+
+
+def test_gear_provider_implements_interface():
+    from cnsd.physics.providers.base import PhysicsProvider
+    from cnsd.physics.providers.gear import GearProvider
+
+    p = GearProvider(n_teeth_input=20, cond_to_rpm={0: 1800}, fs=5120)
+    assert isinstance(p, PhysicsProvider)
+    sig = np.sin(2 * np.pi * 600 * np.arange(2048) / 5120) + 0.1 * np.random.randn(2048)
+    ev = p.evidence(sig, 0)
+    assert 'family_strength' in ev and 'frequencies_hz' in ev
+    assert p.dominant_family(ev) in p.families
+
+
+def test_gear_registered():
+    from cnsd.physics.providers import available_domains, get_provider
+    from cnsd.physics.providers.gear import GearProvider
+
+    assert get_provider('gear') is GearProvider
+    assert 'gear' in available_domains()
