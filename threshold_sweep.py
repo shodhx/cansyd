@@ -104,7 +104,7 @@ def main():
             best_gap = gap
             best_tau = float(tau)
 
-    print(f'\n=> Calibration set saturated (gap=0.000 for all). Defaulting to floor: tau = 1.0')
+    print('\n=> Calibration set saturated (gap=0.000 for all). Defaulting to floor: tau = 1.0')
     print('=> CNN is frozen. Testing robustness across multiple thresholds on Load 3.')
 
     # 5. Final, rigorous test on the Test Set (Load 3)
