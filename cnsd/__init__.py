@@ -20,6 +20,7 @@ Subpackages are independently importable - e.g. `from cnsd.causal import
 intervention_effect_of_condition` does NOT require TensorFlow. Only the full
 CNSD system (which trains the CNN) needs the perception backend.
 """
+
 __version__ = '1.0.0'
 
 # Lazy top-level names (PEP 562): keeps `from cnsd import CNSD` working without
@@ -37,6 +38,7 @@ __all__ = list(_LAZY)
 def __getattr__(name):
     if name in _LAZY:
         import importlib
+
         module, attr = _LAZY[name]
         return getattr(importlib.import_module(module), attr)
     raise AttributeError(f"module 'cnsd' has no attribute '{name}'")

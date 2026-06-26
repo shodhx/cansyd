@@ -13,6 +13,7 @@ shaft rotation rate. Different fault types modulate this differently:
 This module computes GMF + sidebands and measures their prominence in the
 envelope spectrum, mirroring the bearing module's role for rolling elements.
 """
+
 import numpy as np
 from scipy.signal import hilbert
 
@@ -67,8 +68,7 @@ def sideband_strength(freqs, mag, gmf, shaft_rate, n_sidebands=2):
     return float(np.mean(vals)) if vals else 0.0
 
 
-def gear_fault_evidence(signal, rpm, n_teeth_input, n_teeth_output=None,
-                        fs=DEFAULT_FS):
+def gear_fault_evidence(signal, rpm, n_teeth_input, n_teeth_output=None, fs=DEFAULT_FS):
     """Physical evidence for gear-fault families in one window.
 
     Returns prominence of:

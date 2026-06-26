@@ -12,15 +12,13 @@ one object:
 Layers: perception (1) -> symbolic verification + root cause (2) -> causal
 Rung-2 (3) -> counterfactual Rung-3 (3B) -> consensus (4).
 """
-import numpy as np
 
-from cnsd.datasets import Dataset
-from cnsd.perception import build_cnn, train_jepa_backbone
-from cnsd.symbolic import PhysicsRuleEngine
-from cnsd.causal import intervention_effect_of_condition, analyze_causal, signal_kurtosis
-from cnsd.counterfactual import build_scm, counterfactual_for_unit, what_if
+from cnsd.causal import intervention_effect_of_condition, signal_kurtosis
 from cnsd.consensus import fuse
+from cnsd.counterfactual import build_scm, what_if
+from cnsd.datasets import Dataset
 from cnsd.diagnosis.report import DiagnosisReport
+from cnsd.symbolic import PhysicsRuleEngine
 
 
 class CNSD:
@@ -36,8 +34,8 @@ class CNSD:
         self._fitted = False
 
     def fit(self, data: Dataset, epochs=30):
-        import tensorflow as tf
         from cnsd.perception.cnn import _train_cnn
+
         nc = int(data.y.max()) + 1
         self.cnn = _train_cnn(data.X, data.y, num_classes=nc, epochs=epochs)
         self.symbolic = self._build_symbolic(data)
@@ -50,22 +48,28 @@ class CNSD:
     def _build_symbolic(self, data):
         """Resolve the physics provider + taxonomy: config first, else the
         dataset's attached physics, else the universal spectral fallback."""
-        from cnsd.symbolic import PhysicsRuleEngine
-        from cnsd.physics.providers import SpectralProvider, BearingProvider
+        from cnsd.physics.providers import BearingProvider, SpectralProvider
+
         if self.config is not None:
             from cnsd.builder import build_provider, build_taxonomy
-            return PhysicsRuleEngine(provider=build_provider(self.config),
-                                     taxonomy=build_taxonomy(self.config),
-                                     prominence_threshold=self.prominence_threshold)
+
+            return PhysicsRuleEngine(
+                provider=build_provider(self.config),
+                taxonomy=build_taxonomy(self.config),
+                prominence_threshold=self.prominence_threshold,
+            )
         if getattr(data, 'physics', None) is not None:
             p = data.physics
             provider = BearingProvider(bearing=p.bearing, cond_to_rpm=p.cond_to_rpm, fs=p.fs)
-            return PhysicsRuleEngine(provider=provider,
-                                     taxonomy=getattr(data, 'taxonomy', None),
-                                     prominence_threshold=self.prominence_threshold)
+            return PhysicsRuleEngine(
+                provider=provider,
+                taxonomy=getattr(data, 'taxonomy', None),
+                prominence_threshold=self.prominence_threshold,
+            )
         fs = getattr(data, 'fs', 12000) or 12000
-        return PhysicsRuleEngine(provider=SpectralProvider(fs=fs),
-                                 prominence_threshold=self.prominence_threshold)
+        return PhysicsRuleEngine(
+            provider=SpectralProvider(fs=fs), prominence_threshold=self.prominence_threshold
+        )
 
     def diagnose(self, data: Dataset) -> DiagnosisReport:
         if not self._fitted:
@@ -76,17 +80,19 @@ class CNSD:
         for i in range(len(data.X)):
             diag = self.symbolic.diagnose(data.X[i].flatten(), cnn_class[i], data.cond[i])
             status = fuse(diag['verdict'], cnn_conf[i], self.conf_thresh)
-            records.append({
-                'root_cause': diag['root_cause'],
-                'predicted_class': diag['predicted_class'],
-                'predicted_fault': diag['predicted_family'],
-                'severity': diag['severity'],
-                'cnn_confidence': float(cnn_conf[i]),
-                'physics_verdict': diag['verdict'],
-                'status': status,
-                'action': diag['action'],
-                'explanation': diag['explanation'],
-            })
+            records.append(
+                {
+                    'root_cause': diag['root_cause'],
+                    'predicted_class': diag['predicted_class'],
+                    'predicted_fault': diag['predicted_family'],
+                    'severity': diag['severity'],
+                    'cnn_confidence': float(cnn_conf[i]),
+                    'physics_verdict': diag['verdict'],
+                    'status': status,
+                    'action': diag['action'],
+                    'explanation': diag['explanation'],
+                }
+            )
         return DiagnosisReport(records, data)
 
     def condition_effect(self, data: Dataset):
@@ -101,8 +107,13 @@ class CNSD:
             cf_val = list(condition_cf.values())[0] if condition_cf else 0.0
         else:
             cf_val = condition_cf
-            
-        feat = signal_kurtosis(data.X[unit_index:unit_index+1])[0]
-        return what_if(feat, data.cond[unit_index], cf_val,
-                       scm=self.scm, X_sample=data.X[unit_index].flatten(),
-                       factual_y=(data.y[unit_index] > 0))
+
+        feat = signal_kurtosis(data.X[unit_index : unit_index + 1])[0]
+        return what_if(
+            feat,
+            data.cond[unit_index],
+            cf_val,
+            scm=self.scm,
+            X_sample=data.X[unit_index].flatten(),
+            factual_y=(data.y[unit_index] > 0),
+        )
