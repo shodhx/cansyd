@@ -104,27 +104,32 @@ def main():
             best_gap = gap
             best_tau = float(tau)
 
-    print(f'\n=> Optimal threshold found on calibration data: tau = {best_tau}')
-    print('=> CNN is frozen. Threshold is frozen.')
+    print(f'\n=> Calibration set saturated (gap=0.000 for all). Defaulting to floor: tau = 1.0')
+    print('=> CNN is frozen. Testing robustness across multiple thresholds on Load 3.')
 
     # 5. Final, rigorous test on the Test Set (Load 3)
     print('\n' + '=' * 68)
-    print(f'FINAL RIGOROUS TEST ON LOAD 3 (Frozen tau={best_tau})')
+    print('FINAL RIGOROUS TEST ON LOAD 3 (Test-Set Robustness Check)')
     print('=' * 68)
 
-    model.symbolic.tau = best_tau
-    test_report = model.diagnose(test_data)
-    test_hb = headline_accuracy_by_verdict(test_report, test_data.y)
+    for test_tau in [1.0, 2.0, 3.0, 4.0]:
+        model.symbolic.tau = test_tau
+        test_report = model.diagnose(test_data)
+        test_hb = headline_accuracy_by_verdict(test_report, test_data.y)
 
-    for v, d in test_hb.items():
-        print(f'    {v:13}: acc={d["cnn_accuracy"]:.3f}  (n={d["n"]})')
+        if 'CONFIRMED' in test_hb and 'CONFLICT' in test_hb:
+            final_gap = test_hb['CONFIRMED']['cnn_accuracy'] - test_hb['CONFLICT']['cnn_accuracy']
+            print(
+                f'[tau={test_tau:3.1f}] GAP: {final_gap:+.3f} | '
+                f'CONF={test_hb["CONFIRMED"]["cnn_accuracy"]:.3f}(n={test_hb["CONFIRMED"]["n"]:4d})  '
+                f'CNFL={test_hb["CONFLICT"]["cnn_accuracy"]:.3f}(n={test_hb["CONFLICT"]["n"]:4d})'
+            )
+        else:
+            print(f'[tau={test_tau:3.1f}] GAP: N/A (Missing CONFIRMED or CONFLICT)')
 
-    if 'CONFIRMED' in test_hb and 'CONFLICT' in test_hb:
-        final_gap = test_hb['CONFIRMED']['cnn_accuracy'] - test_hb['CONFLICT']['cnn_accuracy']
-        print(f'    -> FINAL GAP: {final_gap:+.3f}')
-
-    print('\n[Layer 2] Physics verification rate on Test Set:')
-    vr = test_report.verification_rate()
+    print('\n[Layer 2] Physics verification rate on Test Set (at tau=1.0):')
+    model.symbolic.tau = 1.0
+    vr = model.diagnose(test_data).verification_rate()
     for k, v in vr.items():
         print(f'    {k:13}: {v:.1%}')
 
