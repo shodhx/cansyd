@@ -21,6 +21,7 @@ A running log of every validation run, benchmark, and cross-domain test for CNSD
 | 3 | Cross-condition robustness (AWGN) | Bearing (CWRU) | preliminary |
 | 4 | Multi-seed headline | Bearing (CWRU) | planned |
 | 5 | Cross-domain: SEU gearbox | Gear (SEU) | preliminary (failed) |
+| 6 | Cross-domain: Paderborn (PU) | Bearing (PU) | planned |
 
 ---
 
@@ -60,7 +61,7 @@ data:     5806 train / 2019 test samples
 
 ## 2. CWRU Threshold Sweep — Held-out Calibration Split
 
-* **Status:** validated
+* **Status:** preliminary
 * **Purpose:** rigorously prove that filtering by physics verification increases CNN reliability, avoiding test-set leakage by tuning the threshold `tau` on a completely unseen calibration split.
 * **Setup:** CNN trained only on Motor Loads 0 and 1. Sweep performed on Load 2 to select optimal `tau` (1.0). Frozen model and threshold applied to Load 3 (Test).
 
@@ -84,9 +85,9 @@ frozen_tau: 1.0
 | CONFIRMED | 995 | 0.980 |
 | CONFLICT | 1019 | 0.790 |
 | INCONCLUSIVE | 5 | 1.000 |
-| **Gap (CONFIRMED - CONFLICT)** | | **+0.190 (VALIDATED)** |
+| **Gap (CONFIRMED - CONFLICT)** | | **+0.190** |
 
-* **Notes / limitations:** The gap is a massively positive +0.190, definitively proving that when the physics engine CONFIRMS the CNN prediction, the diagnosis is significantly more reliable than when they CONFLICT.
+* **Notes / limitations:** The gap is a massively positive +0.190 on this dataset, indicating that when the physics engine CONFIRMS the CNN prediction, the diagnosis is significantly more reliable than when they CONFLICT.
 
 ---
 
