@@ -188,33 +188,41 @@ if __name__ == '__main__':
             best_tau = float(tau)
 
     print(f'\n=> Selected optimal tau: {best_tau}')
+
+    print('\n[3] Evaluating on Test Set (1500 RPM) Across Multiple Taus...')
+    
+    # Calculate baseline CNN accuracy first (independent of tau)
     model.symbolic.tau = best_tau
-
-    print('\n[3] Evaluating on Test Set (1500 RPM)...')
     report = model.diagnose(test_data)
-
-    hb = headline_accuracy_by_verdict(report, y_test)
-
-    # Calculate baseline CNN accuracy
     pred = np.array([r['predicted_class'] for r in report.records])
     baseline_acc = float((pred == np.asarray(y_test)).mean())
-
     print('\n--- FINAL TEST RESULTS (CROSS-DOMAIN PU) ---')
     print(f'Baseline CNN Acc:       {baseline_acc:.3f}')
-    if 'CONFIRMED' in hb:
-        print(
-            f'Physics-Confirmed Acc:  {hb["CONFIRMED"]["cnn_accuracy"]:.3f} (n={hb["CONFIRMED"]["n"]})'
-        )
-    if 'CONFLICT' in hb:
-        print(
-            f'Physics-Conflict Acc:   {hb["CONFLICT"]["cnn_accuracy"]:.3f} (n={hb["CONFLICT"]["n"]})'
-        )
-    if 'INCONCLUSIVE' in hb:
-        print(
-            f'Physics-Inconclusive Acc:{hb["INCONCLUSIVE"]["cnn_accuracy"]:.3f} (n={hb["INCONCLUSIVE"]["n"]})'
-        )
+    print('--------------------------------------------')
 
-    if 'CONFIRMED' in hb and 'CONFLICT' in hb:
-        gap = hb['CONFIRMED']['cnn_accuracy'] - hb['CONFLICT']['cnn_accuracy']
-        print(f'GAP (CONF - CNFL):      {gap:+.3f}')
+    taus_to_test = [1.0, 2.0, 2.5, 3.0]
+    if best_tau not in taus_to_test:
+        taus_to_test.append(best_tau)
+        taus_to_test = sorted(list(set(taus_to_test)))
+
+    for test_tau in taus_to_test:
+        model.symbolic.tau = test_tau
+        report = model.diagnose(test_data)
+        hb = headline_accuracy_by_verdict(report, y_test)
+        
+        print(f'\n[Tau = {test_tau:.1f}]')
+        
+        if 'CONFIRMED' in hb:
+            print(f'  Physics-Confirmed Acc:   {hb["CONFIRMED"]["cnn_accuracy"]:.3f} (n={hb["CONFIRMED"]["n"]})')
+        if 'CONFLICT' in hb:
+            print(f'  Physics-Conflict Acc:    {hb["CONFLICT"]["cnn_accuracy"]:.3f} (n={hb["CONFLICT"]["n"]})')
+        
+        if 'INCONCLUSIVE' in hb:
+            inc_n = hb["INCONCLUSIVE"]["n"]
+            inc_pct = (inc_n / len(y_test)) * 100
+            print(f'  Physics-Inconclusive Acc:{hb["INCONCLUSIVE"]["cnn_accuracy"]:.3f} (n={inc_n}, {inc_pct:.1f}%)')
+        
+        if 'CONFIRMED' in hb and 'CONFLICT' in hb:
+            gap = hb['CONFIRMED']['cnn_accuracy'] - hb['CONFLICT']['cnn_accuracy']
+            print(f'  GAP (CONF - CNFL):       {gap:+.3f}')
     print('--------------------------------------------')

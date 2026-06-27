@@ -240,19 +240,25 @@ n_teeth_input: 20 | channel: 2 (planetary x-axis)
 
 * **Known caveats to report honestly:** The accuracy gap is currently backwards and practically noise due to a 99.5% inconclusive rate. This is pending a strict `tau` threshold calibration sweep for gear physics, as well as confirming that GMF strength aligns with the same numerical scale as bearing physics.
 
-## 4. Paderborn University (PU) Dataset - Cross-Domain Domain Shift (Speed)
+## 6. Paderborn University (PU) Dataset - Cross-Domain Domain Shift (Speed)
 
 **Dataset**: Authentic bearing fatigue damages (FAG 6203 deep groove ball bearings).
 **Objective**: Eliminate data leakage by explicitly testing the model's ability to generalize across changing physical operating conditions (Domain Shift). The CNN is trained exclusively on 900 RPM data and tested exclusively on 1500 RPM data.
-**Physics Config**: D=28.5mm, d=6.75mm, N=8, f_s=64kHz. `tau` calibrated to 2.5 on the 1500 RPM calibration split.
+**Physics Config**: D=28.5mm, d=6.75mm, N=8, f_s=64kHz. Baseline CNN Accuracy: 0.704.
 
-### Headline — CNN accuracy by physics verdict (Domain Shift: 900 RPM -> 1500 RPM)
-| Verdict | n | CNN accuracy |
-|---------|---|--------------|
-| CONFIRMED | 2340 | 0.933 |
-| CONFLICT | 1724 | 0.544 |
-| INCONCLUSIVE | 3393 | 0.504 |
-| **Gap (CONFIRMED - CONFLICT)** | | **+0.389** |
+### Test-Set Robustness Check (1500 RPM Test Split)
+To ensure the gap is robust and not just overfitted to a specific threshold, the test set was evaluated across multiple `tau` values:
+
+| Threshold (`tau`) | CONFIRMED Acc | CONFLICT Acc | **Gap** | Inconclusive Rate |
+|-------------------|---------------|--------------|---------|-------------------|
+| 1.0 | 0.918 | 0.553 | **+0.365** | 0.1% |
+| 2.0 | 0.953 | 0.562 | **+0.390** | 25.9% |
+| 2.5 | 0.977 | 0.560 | **+0.417** | 46.3% |
+| 3.0 | 0.987 | 0.566 | **+0.421** | 58.5% |
 
 **Notes**:
-This experiment perfectly proves the necessity of the causal physics engine. Because the baseline CNN was trained only on 900 RPM data, its pattern matching failed catastrophically when tested on 1500 RPM data (Baseline Accuracy crashed to 64.8%). However, the Physics Engine mathematically adjusts for RPM dynamically. It successfully caught the CNN's failures, flagging over 1,700 predictions as CONFLICTS, while isolating 2,340 verified predictions that maintained a 93.3% accuracy. The massive Accuracy Gap of **+38.9%** undeniably proves that the physics engine acts as a robust, domain-aware verification layer for unreliable neural networks.
+Because the baseline CNN was trained only on 900 RPM data, its pattern matching degraded when tested on 1500 RPM data (Baseline Accuracy crashed to 70.4%). The Physics Engine dynamically adjusts for RPM and isolates reliable predictions. As shown above, the gap remains strongly positive across all thresholds, peaking at +0.421.
+
+**Known Limitations**: 
+- **High Inconclusive Rate**: At the optimally calibrated threshold (`tau=2.5`), the engine flags ~46% of predictions as INCONCLUSIVE. This is a known trade-off of the strict verification process.
+- **Scope**: Demonstrated strong robustness on the PU speed-shift task (single dataset, single seed).
