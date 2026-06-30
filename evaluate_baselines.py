@@ -67,6 +67,7 @@ try:
         'soft_gap': [],
         'mc_gap': [],
         'ens_gap': [],
+        'ncov': [],
         'noise_catch': {db: [] for db in [np.inf, 20, 10, 5, 0]},
     }
 
@@ -183,6 +184,7 @@ try:
         phys_gap = ca - fa
         target_n = int(conf.sum())
         results['phys_gap'].append(phys_gap)
+        results['ncov'].append(target_n)
         print(f'Physics GAP={phys_gap:+.3f} (Coverage N={target_n})')
 
         # Softmax evaluation at matched coverage
@@ -265,6 +267,15 @@ try:
     print(
         f'Ensemble GAP: {np.nanmean(results["ens_gap"]):+.3f} ± {np.nanstd(results["ens_gap"]):.3f}'
     )
+
+    t_stat, p_val = stats.ttest_rel(results['phys_gap'], results['ens_gap'])
+    avg_ncov = np.mean(results['ncov'])
+    total_samples = len(yte)
+    cov_pct = (avg_ncov / total_samples) * 100
+
+    print('\nStatistical Significance (Physics vs Ensemble):')
+    print(f'  Paired t-test p-value: {p_val:.4f}')
+    print(f'  Average Matched Coverage: N = {avg_ncov:.1f} / {total_samples} ({cov_pct:.2f}%)')
 
     print("\nNoise Test Catch Rate (Physics catches Ensemble's confident errors):")
     for snr_db in [np.inf, 20, 10, 5, 0]:
