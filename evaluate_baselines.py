@@ -60,7 +60,7 @@ try:
             return AlwaysDropout(layer.rate)
         return layer.__class__.from_config(layer.get_config())
 
-    seeds = [42, 43, 44, 45, 46]
+    seeds = list(range(42, 62))
 
     results = {
         'phys_gap': [],
@@ -256,7 +256,7 @@ try:
             s = 'clean' if np.isinf(snr_db) else f'{snr_db}dB'
             print(f'  Noise={s:>5} | catch_rate={catch:.3f}')
 
-    print('\n' + '=' * 60 + '\nFINAL AGGREGATED RESULTS (5 Seeds)\n' + '=' * 60)
+    print('\n' + '=' * 60 + f'\nFINAL AGGREGATED RESULTS ({len(seeds)} Seeds)\n' + '=' * 60)
     print(
         f'Physics GAP: {np.nanmean(results["phys_gap"]):+.3f} ± {np.nanstd(results["phys_gap"]):.3f}'
     )
