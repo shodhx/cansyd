@@ -45,9 +45,15 @@ def envelope_spectrum(signal, fs=DEFAULT_FS):
     return freqs, mag
 
 
-def _prominence(freqs, mag, f0, rel_tol=0.04):
+def _prominence(freqs, mag, f0, rel_tol=0.04, fs=None, n_samples=None):
     if f0 <= 0:
         return 0.0
+
+    # Adaptive tolerance: widen on low-resolution FFT, cap at 8%
+    if fs is not None and n_samples is not None and n_samples > 0:
+        df = fs / n_samples
+        rel_tol = min(max(rel_tol, 2.0 * df / f0), 0.08)
+
     tol = f0 * rel_tol
     band = (freqs >= f0 - tol) & (freqs <= f0 + tol)
     if not band.any():
@@ -58,13 +64,13 @@ def _prominence(freqs, mag, f0, rel_tol=0.04):
     return float(peak / (baseline + 1e-12))
 
 
-def sideband_strength(freqs, mag, gmf, shaft_rate, n_sidebands=2):
+def sideband_strength(freqs, mag, gmf, shaft_rate, n_sidebands=2, fs=None, n_samples=None):
     """Mean prominence of the shaft-rate sidebands around the GMF - the marker of
     a localized tooth fault."""
     vals = []
     for k in range(1, n_sidebands + 1):
         for f0 in (gmf - k * shaft_rate, gmf + k * shaft_rate):
-            vals.append(_prominence(freqs, mag, f0))
+            vals.append(_prominence(freqs, mag, f0, fs=fs, n_samples=n_samples))
     return float(np.mean(vals)) if vals else 0.0
 
 
@@ -79,8 +85,9 @@ def gear_fault_evidence(signal, rpm, n_teeth_input, n_teeth_output=None, fs=DEFA
     freqs, mag = envelope_spectrum(signal, fs)
     gf = gear_mesh_frequencies(rpm, n_teeth_input, n_teeth_output)
     gmf, shaft = gf['GMF'], gf['shaft_input']
-    mesh = np.mean([_prominence(freqs, mag, gmf * h) for h in (1, 2)])
-    side = sideband_strength(freqs, mag, gmf, shaft)
+    n_samples = len(np.asarray(signal).flatten())
+    mesh = np.mean([_prominence(freqs, mag, gmf * h, fs=fs, n_samples=n_samples) for h in (1, 2)])
+    side = sideband_strength(freqs, mag, gmf, shaft, fs=fs, n_samples=n_samples)
     return {
         'mesh_strength': float(mesh),
         'sideband_strength': float(side),

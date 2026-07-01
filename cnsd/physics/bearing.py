@@ -70,13 +70,21 @@ def envelope_spectrum(signal, fs=CWRU_FS):
     return freqs, mag
 
 
-def band_energy(freqs, mag, f0, rel_tol=0.04, n_harmonics=2):
+def band_energy(freqs, mag, f0, rel_tol=0.04, n_harmonics=2, fs=None, n_samples=None):
     """Energy in narrow bands around f0 and its harmonics, relative to the local
     spectrum. Returns a prominence ratio: how strong the peak near f0 is versus
     the surrounding baseline. >1 means a genuine peak sits at f0.
     """
     if f0 <= 0:
         return 0.0
+
+    # Adaptive tolerance: widen the band on low-resolution FFT datasets,
+    # but cap at 8% to prevent adjacent fault-frequency bands (e.g. BPFI
+    # at 162 Hz and BSF at 141 Hz) from overlapping.
+    if fs is not None and n_samples is not None and n_samples > 0:
+        df = fs / n_samples  # FFT bin width in Hz
+        rel_tol = min(max(rel_tol, 2.0 * df / f0), 0.08)
+
     prominences = []
     for h in range(1, n_harmonics + 1):
         fc = f0 * h
@@ -99,9 +107,10 @@ def fault_frequency_evidence(signal, rpm, fs=CWRU_FS, bearing=BEARING_6205):
     """
     freqs, mag = envelope_spectrum(signal, fs)
     cf = characteristic_frequencies(rpm, bearing)
+    n_samples = len(np.asarray(signal).flatten())
     return {
-        'BPFO': band_energy(freqs, mag, cf['BPFO']),  # outer race evidence
-        'BPFI': band_energy(freqs, mag, cf['BPFI']),  # inner race evidence
-        'BSF': band_energy(freqs, mag, cf['BSF']),  # ball evidence
+        'BPFO': band_energy(freqs, mag, cf['BPFO'], fs=fs, n_samples=n_samples),
+        'BPFI': band_energy(freqs, mag, cf['BPFI'], fs=fs, n_samples=n_samples),
+        'BSF': band_energy(freqs, mag, cf['BSF'], fs=fs, n_samples=n_samples),
         'freqs_hz': {k: float(v) for k, v in cf.items()},
     }
