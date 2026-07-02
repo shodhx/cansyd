@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 import traceback
@@ -7,39 +8,81 @@ import scipy.stats as stats
 
 try:
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-
     import tensorflow as tf
 
     from cnsd import Dataset
     from cnsd.diagnosis.system import CNSD
     from cnsd.perception.cnn import _train_cnn
-    from cnsd.physics import PhysicsConfig
-    from validate_pu import load_pu_domain_split
 
-    print('Loading Authentic PU dataset (Cross-Domain RPM Split)...')
-    (X_train_full, y_train_full, cond_train_full), (X_target, y_target, cond_target) = (
-        load_pu_domain_split()
-    )
+    # Argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dataset', type=str, required=True, choices=['cwru', 'pu', 'xjtusy'])
+    args = parser.parse_args()
 
-    unique_rpm = set(cond_train_full).union(set(cond_target))
-    rpm_map = {float(r): float(r) for r in unique_rpm}
-    pu_physics = PhysicsConfig(
-        bearing={'n_balls': 8, 'd_ball': 6.75, 'd_pitch': 28.5, 'contact_angle': 0.0},
-        cond_to_rpm=rpm_map,
-        fs=64000,
-        name='PU-6203',
-    )
-    pu_taxonomy = {
-        0: ('Normal', 'None'),
-        1: ('Outer Race', 'Medium'),
-        2: ('Inner Race', 'High'),
-    }
+    print(f'Loading {args.dataset.upper()} dataset...')
+
+    if args.dataset == 'pu':
+        from cnsd.physics import PhysicsConfig
+        from validate_pu import load_pu_domain_split
+
+        (X_train_full, y_train_full, cond_train_full), (X_target, y_target, cond_target) = (
+            load_pu_domain_split()
+        )
+        unique_rpm = set(cond_train_full).union(set(cond_target))
+        rpm_map = {float(r): float(r) for r in unique_rpm}
+        physics = PhysicsConfig(
+            bearing={'n_balls': 8, 'd_ball': 6.75, 'd_pitch': 28.5, 'contact_angle': 0.0},
+            cond_to_rpm=rpm_map,
+            fs=64000,
+            name='PU-6203',
+        )
+        taxonomy = {0: ('Normal', 'None'), 1: ('Outer Race', 'Medium'), 2: ('Inner Race', 'High')}
+        fs = 64000
+
+    elif args.dataset == 'cwru':
+        from validate_run import CWRU, TAXONOMY, load_cwru
+
+        X, y, cond = load_cwru()
+        X = np.asarray(X, np.float32)
+        y = np.asarray(y)
+        cond = np.asarray(cond)
+
+        train_mask = cond < 3
+        target_mask = cond == 3
+
+        X_train_full = X[train_mask]
+        y_train_full = y[train_mask]
+        cond_train_full = cond[train_mask]
+
+        X_target = X[target_mask]
+        y_target = y[target_mask]
+        cond_target = cond[target_mask]
+
+        physics = CWRU
+        taxonomy = TAXONOMY
+        fs = 12000
+
+    elif args.dataset == 'xjtusy':
+        from cnsd.datasets.xjtusy import load_xjtusy_domain_split
+
+        train_ds, target_ds = load_xjtusy_domain_split(window_size=4096)
+
+        X_train_full = train_ds.X
+        y_train_full = train_ds.y
+        cond_train_full = train_ds.cond
+
+        X_target = target_ds.X
+        y_target = target_ds.y
+        cond_target = target_ds.cond
+
+        physics = target_ds.physics
+        taxonomy = target_ds.taxonomy
+        fs = target_ds.fs
 
     def get_matched_coverage_gap(score, correct, target_n):
         if target_n == 0:
             return float('nan')
         # Score is higher for MORE confident
-        # Sort descending by score
         sorted_indices = np.argsort(score)[::-1]
         hi_indices = sorted_indices[:target_n]
 
@@ -76,10 +119,10 @@ try:
         X_target,
         y_target,
         cond_target,
-        fs=64000,
-        physics=pu_physics,
-        taxonomy=pu_taxonomy,
-        name='PU_Test',
+        fs=fs,
+        physics=physics,
+        taxonomy=taxonomy,
+        name=f'{args.dataset.upper()}_Test',
     )
     sig_te = np.stack([test_ds.X[i].reshape(-1) for i in range(len(test_ds.X))]).astype(np.float32)
     yte = test_ds.y
@@ -112,10 +155,22 @@ try:
         )
 
         train_ds = Dataset.from_arrays(
-            X_tr, y_tr, cond_tr, fs=64000, physics=pu_physics, taxonomy=pu_taxonomy, name='PU_Train'
+            X_tr,
+            y_tr,
+            cond_tr,
+            fs=fs,
+            physics=physics,
+            taxonomy=taxonomy,
+            name=f'{args.dataset.upper()}_Train',
         )
         calib_ds = Dataset.from_arrays(
-            X_ca, y_ca, cond_ca, fs=64000, physics=pu_physics, taxonomy=pu_taxonomy, name='PU_Calib'
+            X_ca,
+            y_ca,
+            cond_ca,
+            fs=fs,
+            physics=physics,
+            taxonomy=taxonomy,
+            name=f'{args.dataset.upper()}_Calib',
         )
 
         # 2. Train Primary Model (Bypass SCM to prevent multiprocess deadlocks)
@@ -209,13 +264,10 @@ try:
         results['mc_gap'].append(mc_gap)
 
         # Ensemble at matched coverage
-        ens_preds_probs = np.stack(
-            [m.predict(Xin_te, batch_size=128, verbose=0) for m in ens]
-        )  # (3, n, c)
-        ens_mean = ens_preds_probs.mean(0)  # (n, c)
+        ens_preds_probs = np.stack([m.predict(Xin_te, batch_size=128, verbose=0) for m in ens])
+        ens_mean = ens_preds_probs.mean(0)
         ens_pred_class = ens_mean.argmax(1)
         ens_correct = ens_pred_class == yte
-        # Score = negative entropy of ensemble mean
         ens_score = (ens_mean * np.log(ens_mean + eps)).sum(1)
         ens_gap = get_matched_coverage_gap(ens_score, ens_correct, target_n)
         results['ens_gap'].append(ens_gap)
@@ -235,7 +287,6 @@ try:
                 sig_n = sig_te + rng.randn(*sig_te.shape).astype(np.float32) * np.sqrt(npow)
 
             Xin_n = sig_n[..., None]
-            # Use ensemble mode vote to define 'unanimous' exactly like Abhi's template
             ep_class = np.stack(
                 [m.predict(Xin_n, batch_size=128, verbose=0).argmax(1) for m in ens]
             )
