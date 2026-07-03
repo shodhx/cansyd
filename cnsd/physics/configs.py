@@ -31,3 +31,10 @@ SEU_PHYSICS = PhysicsConfig(
     fs=20000,
     name='SEU-Gearbox',
 )
+
+XJTUSY_PHYSICS = PhysicsConfig(
+    bearing={'n_balls': 8, 'd_ball': 7.94, 'd_pitch': 34.55, 'contact_angle': 0.0},
+    cond_to_rpm={2100.0: 2100.0, 2250.0: 2250.0, 2400.0: 2400.0},
+    fs=25600,
+    name='XJTU-SY-LDK-UER204',
+)
