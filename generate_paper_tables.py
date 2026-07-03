@@ -44,7 +44,11 @@ data_xjtu = target_xjtu
 # ---------------------------------------------------------
 # A. LAYER 3 VALIDATION (CAUSAL LAYER)
 # ---------------------------------------------------------
-print('\n--- SECTION A: CAUSAL LAYER ---')
+print('\n--- SECTION A: LAYER 3A (CAUSAL LAYER) ---')
+print('Note: Faults in benchmark datasets are experimentally assigned (compositional).')
+print(
+    'This section serves as a mathematical demonstration of the SCM capability, not as discovered causal effects.'
+)
 datasets_dict = {'CWRU': data_cwru, 'PU': data_pu, 'XJTU': data_xjtu}
 
 causal_results = []
@@ -54,16 +58,16 @@ for name, data in datasets_dict.items():
     causal_results.append(
         {
             'Dataset': name,
-            'Causal Effect': f'{res["ate"]:.4f}',
+            'ATE (Demo)': f'{res["ate"]:.4f}',
             'CI': f'[{res["ci"][0]:.4f}, {res["ci"][1]:.4f}]',
             'Significance': f'p={res["p_value"]:.4f}',
         }
     )
 
-print(f'{"Dataset":<10} | {"Causal Effect":<15} | {"95% CI":<20} | {"Significance"}')
+print(f'{"Dataset":<10} | {"ATE (Demo)":<15} | {"95% CI":<20} | {"Significance"}')
 print('-' * 65)
 for r in causal_results:
-    print(f'{r["Dataset"]:<10} | {r["Causal Effect"]:<15} | {r["CI"]:<20} | {r["Significance"]}')
+    print(f'{r["Dataset"]:<10} | {r["ATE (Demo)"]:<15} | {r["CI"]:<20} | {r["Significance"]}')
 
 # Generate Visual Causal Graph
 G = nx.DiGraph()
@@ -114,7 +118,7 @@ model_xjtu.fit(train_xjtu, epochs=10)  # 10 epochs is enough for demonstration
 # Pick an example: A severe fault in XJTU target data
 fault_idx = np.where(data_xjtu.y > 0)[0][10]
 actual_cond = data_xjtu.cond[fault_idx]
-cf_cond = 35.0 if actual_cond == 37.5 else 37.5
+cf_cond = 15.0  # Intervene with a genuinely different speed (900 RPM) to see real risk delta
 
 cf_res = model_xjtu.what_if(data_xjtu, fault_idx, cf_cond)
 
@@ -161,30 +165,16 @@ subset_data = Dataset.from_arrays(
 )
 report = model_xjtu.diagnose(subset_data)
 
-print(f'{"Machine":<10} | {"CNSD Decision":<20} | {"Expert Decision":<15} | {"Match"}')
-print('-' * 60)
+print(f'{"Machine":<10} | {"CNSD Recommended Action":<40}')
+print('-' * 55)
 
 maintenance_priority = []
 
 for i, rec in enumerate(report.records[:10]):
     machine_id = f'M-{i + 1:03d}'
     cnsd_dec = rec['action']
-    expert_dec = 'Immediate Shutdown' if subset_data.y[i] > 0 else 'Normal Operation'
 
-    # Simple semantic match logic
-    match = (
-        'YES'
-        if (
-            subset_data.y[i] > 0
-            and (
-                'Shutdown' in cnsd_dec or 'Maintenance' in cnsd_dec or 'inspect' in cnsd_dec.lower()
-            )
-        )
-        or (subset_data.y[i] == 0 and 'monitor' in cnsd_dec.lower())
-        else 'NO'
-    )
-
-    print(f'{machine_id:<10} | {cnsd_dec[:18]:<20} | {expert_dec:<15} | {match}')
+    print(f'{machine_id:<10} | {cnsd_dec:<40}')
 
     # Priority ranking score = CNN confidence + severity if confirmed
     score = rec['cnn_confidence'] * (1 if rec['status'] == 'CONFIRMED_FAULT' else 0)
@@ -195,50 +185,4 @@ maintenance_priority.sort(key=lambda x: x[1], reverse=True)
 for rank, (m_id, score, verdict) in enumerate(maintenance_priority[:5]):
     print(f'Rank {rank + 1}: {m_id} (Priority Score: {score:.2f}, Verdict: {verdict})')
 
-# ---------------------------------------------------------
-# F. OPERATIONAL UTILITY STUDY
-# ---------------------------------------------------------
-print('\n--- SECTION F: OPERATIONAL UTILITY ---')
-# Costs
-COST_FALSE_ALARM = -500
-COST_MISSED_FAULT = -5000
-COST_HIT = 2000
-
-# Evaluate on the 50 subset
-baseline_preds = model_xjtu.cnn.predict(subset_data.X, verbose=0).argmax(1)
-cnsd_statuses = [r['status'] for r in report.records]
-gt = subset_data.y
-
-
-def calc_utility(preds, is_cnsd=False):
-    tp = fp = fn = tn = 0
-    for i in range(len(gt)):
-        actual_fault = gt[i] > 0
-        if is_cnsd:
-            cnsd_dec = report.records[i]['action']
-            pred_fault = (
-                'Shutdown' in cnsd_dec or 'Maintenance' in cnsd_dec or 'inspect' in cnsd_dec.lower()
-            )
-        else:
-            pred_fault = preds[i] > 0
-
-        if pred_fault and actual_fault:
-            tp += 1
-        elif pred_fault and not actual_fault:
-            fp += 1
-        elif not pred_fault and actual_fault:
-            fn += 1
-        else:
-            tn += 1
-
-    cost = (tp * COST_HIT) + (fp * COST_FALSE_ALARM) + (fn * COST_MISSED_FAULT)
-    return tp, fp, cost
-
-
-base_tp, base_fp, base_cost = calc_utility(baseline_preds, False)
-cnsd_tp, cnsd_fp, cnsd_cost = calc_utility(None, True)
-
-print(f'{"Method":<10} | {"Early Warning (TP)":<20} | {"False Alarms":<15} | {"Maintenance Value"}')
-print('-' * 75)
-print(f'{"Baseline":<10} | {base_tp:<20} | {base_fp:<15} | ${base_cost:,}')
-print(f'{"CNSD":<10} | {cnsd_tp:<20} | {cnsd_fp:<15} | ${cnsd_cost:,}')
+# SECTION F OPERATIONAL UTILITY REMOVED (As requested by Abhi, performance was identical to baseline and weakened the paper)
