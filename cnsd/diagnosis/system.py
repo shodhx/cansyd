@@ -13,7 +13,7 @@ Layers: perception (1) -> symbolic verification + root cause (2) -> causal
 Rung-2 (3) -> counterfactual Rung-3 (3B) -> consensus (4).
 """
 
-from cnsd.causal import intervention_effect_of_condition, signal_kurtosis
+from cnsd.causal import compute_vibration_rms, intervention_effect_of_condition, signal_kurtosis
 from cnsd.consensus import fuse
 from cnsd.counterfactual import build_scm, what_if
 from cnsd.datasets import Dataset
@@ -41,7 +41,8 @@ class CNSD:
         self.symbolic = self._build_symbolic(data)
         # fit the Rung-3 SCM (graceful None if DoWhy absent)
         feat = signal_kurtosis(data.X)
-        self.scm = build_scm(data.cond, feat, data.y)
+        rms = compute_vibration_rms(data.X)
+        self.scm = build_scm(data.cond, feat, rms)
         self._fitted = True
         return self
 
@@ -100,7 +101,8 @@ class CNSD:
         return intervention_effect_of_condition(data.y, data.cond)
 
     def what_if(self, data: Dataset, unit_index, condition_cf):
-        """Rung-3 counterfactual for one unit (sensitivity fallback w/o DoWhy)."""
+        """Rung-3 counterfactual degradation severity (RMS) under do(Z) for one
+        unit (sensitivity fallback w/o DoWhy)."""
         # Future refactor: process the full condition_cf dictionary for multiple interventions.
         # Currently, the core SCM supports a single Z variable, so we extract the first value.
         if isinstance(condition_cf, dict):
@@ -115,5 +117,5 @@ class CNSD:
             cf_val,
             scm=self.scm,
             X_sample=data.X[unit_index].flatten(),
-            factual_y=(data.y[unit_index] > 0),
+            factual_y=compute_vibration_rms(data.X[unit_index : unit_index + 1])[0],
         )
