@@ -23,12 +23,12 @@ def dowhy_gcm_available():
         return False
 
 
-def build_scm(condition, signal_feature, fault_outcome):
-    """Fit an InvertibleStructuralCausalModel over the corrected CNSD graph:
-        Z (condition) -> X (signal feature) -> Y (fault outcome)
+def build_scm(condition, signal_feature, degradation_outcome):
+        """ Z (condition) -> X (signal feature) -> Y (degradation outcome)
         Z -> Y
-    Returns a fitted SCM ready for counterfactual queries, or None if DoWhy is
-    unavailable.
+    Y must be a CONTINUOUS degradation quantity (e.g. vibration RMS), not a
+    binary fault label - a binary Y collapses unit-level counterfactuals to
+    flips and cannot express gradual, direction-sensible deltas.
     """
     if not dowhy_gcm_available():
         return None
@@ -40,7 +40,7 @@ def build_scm(condition, signal_feature, fault_outcome):
         {
             'Z': np.asarray(condition, float),
             'X': np.asarray(signal_feature, float),
-            'Y': (np.asarray(fault_outcome) > 0).astype(float),
+            'Y': np.asarray(degradation_outcome, float),
         }
     )
     # operational graph over the measured descriptor X (condition Z -> descriptor
@@ -57,7 +57,8 @@ def counterfactual_for_unit(scm, observed_row, condition_cf):
 
     observed_row : dict with the unit's factual {'Z','X','Y'}
     condition_cf : the counterfactual operating condition (do(Z := condition_cf))
-    Returns the factual vs counterfactual fault indication for this unit.
+    Returns the factual vs counterfactual degradation severity (vibration RMS)
+    for this unit - a gradual, direction-sensible delta, not a fault flip.
     """
     import pandas as pd
     from dowhy import gcm
