@@ -21,7 +21,7 @@ import numpy as np
 import tensorflow as tf
 
 from cnsd import Dataset
-from cnsd.causal import signal_kurtosis
+from cnsd.causal import compute_vibration_rms, signal_kurtosis
 from cnsd.counterfactual import build_scm, counterfactual_for_unit, dowhy_gcm_available
 from cnsd.diagnosis.system import CNSD
 from cnsd.physics import PhysicsConfig
@@ -203,12 +203,13 @@ def main():
     print(f'\n[Layer 3B] DoWhy available: {dowhy_gcm_available()}')
     if dowhy_gcm_available():
         feat = signal_kurtosis(full_data.X)
-        scm = build_scm(full_data.cond, feat, full_data.y)
+        rms = compute_vibration_rms(full_data.X)
+        scm = build_scm(full_data.cond, feat, rms)
         if scm is not None:
             row = {
                 'Z': float(full_data.cond[0]),
                 'X': float(feat[0]),
-                'Y': float(full_data.y[0] > 0),
+                'Y': float(rms[0]),
             }
             cf_cond = int(min(np.unique(full_data.cond)))
             cf = counterfactual_for_unit(scm, row, cf_cond)

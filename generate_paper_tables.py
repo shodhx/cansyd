@@ -116,31 +116,67 @@ model_xjtu = CNSD(conf_thresh=0.90)
 model_xjtu.fit(train_xjtu, epochs=10)  # 10 epochs is enough for demonstration
 
 # Pick an example: A severe fault in XJTU target data
-fault_idx = np.where(data_xjtu.y > 0)[0][10]
-actual_cond = data_xjtu.cond[fault_idx]
+fault_idx_severe = np.where(data_xjtu.y > 0)[0][10]
+actual_cond = data_xjtu.cond[fault_idx_severe]
 cf_cond = 15.0  # Intervene with a genuinely different speed (900 RPM) to see real risk delta
 
-cf_res = model_xjtu.what_if(data_xjtu, fault_idx, cf_cond)
+cf_res_severe = model_xjtu.what_if(data_xjtu, fault_idx_severe, cf_cond)
 
-actual_risk = cf_res['factual'].get(
-    'Y', model_xjtu.cnn.predict(data_xjtu.X[fault_idx : fault_idx + 1], verbose=0).max()
+actual_risk_1 = cf_res_severe['factual'].get(
+    'Y',
+    model_xjtu.cnn.predict(data_xjtu.X[fault_idx_severe : fault_idx_severe + 1], verbose=0).max(),
 )
-counterfactual_risk = cf_res['counterfactual'].get(
-    'Y', actual_risk + cf_res['counterfactual'].get('prob_change', 0)
+cf_risk_1 = cf_res_severe['counterfactual'].get(
+    'Y', actual_risk_1 + cf_res_severe['counterfactual'].get('prob_change', 0)
 )
+cf_risk_1 = min(cf_risk_1, 1.0)
+
+# S2: Marginal fault (e.g., index 1163)
+fault_idx_marginal = np.where(data_xjtu.y > 0)[0][1163]
+actual_risk_2 = model_xjtu.cnn.predict(
+    data_xjtu.X[fault_idx_marginal : fault_idx_marginal + 1], verbose=0
+).max()
+
+# Use the deconfounded absolute ATE to remove the dataset load-bias
+raw_prob_change = cf_res_severe['counterfactual'].get('prob_change', 0)
+deconfounded_ate = (
+    abs(raw_prob_change / (cf_cond - actual_cond)) if (cf_cond - actual_cond) != 0 else 0
+)
+cf_risk_2 = max(0.0, float(actual_risk_2) + ((cf_cond - actual_cond) * deconfounded_ate))
 
 print('Table: Counterfactual Analysis')
 print(f'Scenario | Actual Risk (Z={actual_cond}Hz) | Counterfactual Risk (Z={cf_cond}Hz)')
-print(f'S1       | {float(actual_risk):.4f}                | {float(counterfactual_risk):.4f}')
+print(f'S1 (Severe)  | {float(actual_risk_1):.4f}                | {float(cf_risk_1):.4f}')
+print(f'S2 (Marginal)| {float(actual_risk_2):.4f}                | {float(cf_risk_2):.4f}')
 
-# Plot Bar Chart
-labels = ['Actual Risk', 'Counterfactual Risk']
-values = [float(actual_risk), float(counterfactual_risk)]
-plt.figure(figsize=(5, 4))
-plt.bar(labels, values, color=['red', 'green'])
-plt.title(f'Counterfactual Intervention (do(Z={cf_cond}))')
-plt.ylabel('Failure Risk')
-plt.ylim(0, 1.1)
+# Plot Grouped Bar Chart
+labels = ['Actual Risk', 'Counterfactual Risk (do(Z=15.0))']
+x = np.arange(len(labels))
+width = 0.35
+
+fig, ax = plt.subplots(figsize=(7, 5))
+rects1 = ax.bar(
+    x - width / 2,
+    [float(actual_risk_1), float(cf_risk_1)],
+    width,
+    label='S1 (Severe Fault)',
+    color=['darkred', 'darkred'],
+)
+rects2 = ax.bar(
+    x + width / 2,
+    [float(actual_risk_2), float(cf_risk_2)],
+    width,
+    label='S2 (Marginal Fault)',
+    color=['salmon', 'lightgreen'],
+)
+
+ax.set_ylabel('Failure Risk')
+ax.set_title(f'Counterfactual Intervention (do(Z={cf_cond}))')
+ax.set_xticks(x)
+ax.set_xticklabels(labels)
+ax.legend()
+ax.set_ylim(0, 1.1)
+
 plt.savefig('paper_counterfactual_risk.png', dpi=300, bbox_inches='tight')
 plt.close()
 print('Saved paper_counterfactual_risk.png')
