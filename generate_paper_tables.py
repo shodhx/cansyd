@@ -121,61 +121,50 @@ actual_cond = data_xjtu.cond[fault_idx_severe]
 cf_cond = 15.0  # Intervene with a genuinely different speed (900 RPM) to see real risk delta
 
 cf_res_severe = model_xjtu.what_if(data_xjtu, fault_idx_severe, cf_cond)
-
-actual_risk_1 = cf_res_severe['factual'].get(
-    'Y',
-    model_xjtu.cnn.predict(data_xjtu.X[fault_idx_severe : fault_idx_severe + 1], verbose=0).max(),
-)
-cf_risk_1 = cf_res_severe['counterfactual'].get(
-    'Y', actual_risk_1 + cf_res_severe['counterfactual'].get('prob_change', 0)
-)
-cf_risk_1 = min(cf_risk_1, 1.0)
+actual_rms_1 = cf_res_severe['factual'].get('Y', 0.0)
+cf_rms_1 = cf_res_severe['counterfactual'].get('Y', 0.0)
 
 # S2: Marginal fault (e.g., index 1163)
 fault_idx_marginal = np.where(data_xjtu.y > 0)[0][1163]
-actual_risk_2 = model_xjtu.cnn.predict(
-    data_xjtu.X[fault_idx_marginal : fault_idx_marginal + 1], verbose=0
-).max()
-
-# Use the deconfounded absolute ATE to remove the dataset load-bias
-raw_prob_change = cf_res_severe['counterfactual'].get('prob_change', 0)
-deconfounded_ate = (
-    abs(raw_prob_change / (cf_cond - actual_cond)) if (cf_cond - actual_cond) != 0 else 0
-)
-cf_risk_2 = max(0.0, float(actual_risk_2) + ((cf_cond - actual_cond) * deconfounded_ate))
+cf_res_marginal = model_xjtu.what_if(data_xjtu, fault_idx_marginal, cf_cond)
+actual_rms_2 = cf_res_marginal['factual'].get('Y', 0.0)
+cf_rms_2 = cf_res_marginal['counterfactual'].get('Y', 0.0)
 
 print('Table: Counterfactual Analysis')
-print(f'Scenario | Actual Risk (Z={actual_cond}Hz) | Counterfactual Risk (Z={cf_cond}Hz)')
-print(f'S1 (Severe)  | {float(actual_risk_1):.4f}                | {float(cf_risk_1):.4f}')
-print(f'S2 (Marginal)| {float(actual_risk_2):.4f}                | {float(cf_risk_2):.4f}')
+print(f'Scenario | Actual RMS (Z={actual_cond}Hz) | Counterfactual RMS (Z={cf_cond}Hz)')
+print(f'S1 (Severe)  | {float(actual_rms_1):.4f}                | {float(cf_rms_1):.4f}')
+print(f'S2 (Marginal)| {float(actual_rms_2):.4f}                | {float(cf_rms_2):.4f}')
 
 # Plot Grouped Bar Chart
-labels = ['Actual Risk', 'Counterfactual Risk (do(Z=15.0))']
+labels = ['Actual RMS', f'Counterfactual RMS\n(do(Z={cf_cond}))']
 x = np.arange(len(labels))
 width = 0.35
 
 fig, ax = plt.subplots(figsize=(7, 5))
 rects1 = ax.bar(
     x - width / 2,
-    [float(actual_risk_1), float(cf_risk_1)],
+    [float(actual_rms_1), float(cf_rms_1)],
     width,
     label='S1 (Severe Fault)',
     color=['darkred', 'darkred'],
 )
 rects2 = ax.bar(
     x + width / 2,
-    [float(actual_risk_2), float(cf_risk_2)],
+    [float(actual_rms_2), float(cf_rms_2)],
     width,
     label='S2 (Marginal Fault)',
-    color=['salmon', 'lightgreen'],
+    color=['salmon', 'salmon'],
 )
 
-ax.set_ylabel('Failure Risk')
+ax.set_ylabel('Vibration RMS (Continuous)')
 ax.set_title(f'Counterfactual Intervention (do(Z={cf_cond}))')
 ax.set_xticks(x)
 ax.set_xticklabels(labels)
 ax.legend()
-ax.set_ylim(0, 1.1)
+
+# Dynamic ylim based on the max value
+max_val = max(actual_rms_1, cf_rms_1, actual_rms_2, cf_rms_2)
+ax.set_ylim(0, max_val * 1.3)
 
 plt.savefig('paper_counterfactual_risk.png', dpi=300, bbox_inches='tight')
 plt.close()
