@@ -24,8 +24,8 @@ def dowhy_gcm_available():
 
 
 def build_scm(condition, signal_feature, degradation_outcome):
-        """ Z (condition) -> X (signal feature) -> Y (degradation outcome)
-        Z -> Y
+    """Z (condition) -> X (signal feature) -> Y (degradation outcome)
+    Z -> Y
     Y must be a CONTINUOUS degradation quantity (e.g. vibration RMS), not a
     binary fault label - a binary Y collapses unit-level counterfactuals to
     flips and cannot express gradual, direction-sensible deltas.
