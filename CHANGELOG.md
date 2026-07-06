@@ -28,6 +28,7 @@ adheres to semantic versioning once it reaches 1.0.
   and a configurable taxonomy (replacing a hardcoded, CWRU-specific lookup).
 - Causal layer scoped honestly to Pearl Rung 2 (effect of operating condition)
   on a corrected DAG; the counterfactual layer carries Rung 3.
+- Changed rung-3 continuous degradation outcome (RMS) for unit-level counterfactuals (#20)
 
 ### Notes
 - Pre-1.0 research software. Interfaces may change. Not intended for
