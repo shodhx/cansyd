@@ -14,8 +14,8 @@ adheres to semantic versioning once it reaches 1.0.
 - `GearProvider` and gear-mesh physics (GMF + sidebands) for gearbox diagnosis.
 - Configuration layer: YAML-driven physics and taxonomy, resolved into providers
   by `cnsd/builder.py`.
-- Real Pearl Rung-3 counterfactuals via DoWhy `gcm`, with a local-sensitivity
-  fallback when DoWhy is unavailable.
+- **PR #19/20**: Integrated full 5-layer pipeline (CNN -> Symbolic -> Causal Sensitivity -> Causal Counterfactuals -> Consensus Router).
+- **PR #19/20**: Upgraded Rung-3 counterfactuals to use *continuous* vibration RMS outcomes instead of binary labels, enabling direction-sensible physical deltas.
 - Universal `Dataset` contract (`Dataset.from_arrays`) so any vibration dataset
   plugs in without a bespoke loader.
 - Validation scripts for CWRU (`validate_run.py`) and SEU gears
