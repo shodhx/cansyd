@@ -6,7 +6,8 @@ import traceback
 import numpy as np
 import scipy.stats as stats
 
-try:
+
+def main():
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
     import tensorflow as tf
 
@@ -14,7 +15,6 @@ try:
     from cnsd.diagnosis.system import CNSD
     from cnsd.perception.cnn import _train_cnn
 
-    # Argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True, choices=['cwru', 'pu', 'xjtusy'])
     args = parser.parse_args()
@@ -23,7 +23,7 @@ try:
 
     if args.dataset == 'pu':
         from cnsd.physics import PhysicsConfig
-        from validate_pu import load_pu_domain_split
+        from validation.validate_pu import load_pu_domain_split
 
         (X_train_full, y_train_full, cond_train_full), (X_target, y_target, cond_target) = (
             load_pu_domain_split()
@@ -40,7 +40,7 @@ try:
         fs = 64000
 
     elif args.dataset == 'cwru':
-        from validate_run import CWRU, TAXONOMY, load_cwru
+        from validation.validate_cwru import CWRU, TAXONOMY, load_cwru
 
         X, y, cond = load_cwru()
         X = np.asarray(X, np.float32)
@@ -339,7 +339,11 @@ try:
     print('================ DONE ================')
 
 except Exception:
-    with open('crash_traceback.txt', 'w') as f:
-        traceback.print_exc(file=f)
-    print('CRASHED. Check crash_traceback.txt')
-    sys.exit(1)
+        with open('crash_traceback.txt', 'w') as f:
+            traceback.print_exc(file=f)
+        print('CRASHED. Check crash_traceback.txt')
+        sys.exit(1)
+
+
+if __name__ == '__main__':
+    main()

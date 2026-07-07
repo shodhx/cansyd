@@ -18,7 +18,7 @@ adheres to semantic versioning once it reaches 1.0.
 - **PR #19/20**: Upgraded Rung-3 counterfactuals to use *continuous* vibration RMS outcomes instead of binary labels, enabling direction-sensible physical deltas.
 - Universal `Dataset` contract (`Dataset.from_arrays`) so any vibration dataset
   plugs in without a bespoke loader.
-- Validation scripts for CWRU (`validate_run.py`) and SEU gears
+- Validation scripts for CWRU (`validate_cwru.py`) and SEU gears
   (`validate_seu.py`), and a cross-condition robustness script.
 - Test suite covering the physics, symbolic, causal, consensus, and provider
   layers.

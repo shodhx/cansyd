@@ -9,12 +9,14 @@ from cnsd.diagnosis.system import CNSD
 from cnsd.physics import PhysicsConfig
 
 
-def load_pu_domain_split(data_dir=r'E:\301\PU-dataset', window_size=8192):
+def load_pu_domain_split(data_dir=None, window_size=8192):
     """
     Loads authentic PU dataset and strictly splits by RPM (Domain Shift).
     Train: N09 (900 RPM)
     Test/Calib: N15 (1500 RPM)
     """
+    if data_dir is None:
+        data_dir = os.environ.get('CNSD_DATA_PU', r'E:\301\PU-dataset')
     X_train, y_train, cond_train = [], [], []
     X_target, y_target, cond_target = [], [], []
 

@@ -1,5 +1,5 @@
 """
-validate_run.py - one clean end-to-end validation of the CNSD pipeline on CWRU.
+validate_cwru.py - one clean end-to-end validation of the CNSD pipeline on CWRU.
 
 Purpose: prove the rebuilt system actually RUNS on real data and produces the
 numbers the paper claims - before writing the paper. This is a validation run,
@@ -33,7 +33,7 @@ def load_cwru():
 
     from scipy.io import loadmat
 
-    base_dir = r'E:\301\CWRU-dataset'
+    base_dir = os.environ.get('CNSD_DATA_CWRU', r'E:\301\CWRU-dataset')
     if not os.path.exists(base_dir):
         raise FileNotFoundError(f'CWRU dataset not found at {base_dir}')
 

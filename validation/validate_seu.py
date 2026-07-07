@@ -52,7 +52,7 @@ def load_seu():
     containing 'Data' (~line 16), data starts the next line. Pick one channel
     (pre-commit to it before seeing results - no channel cherry-picking).
     """
-    base_dir = r'E:\301\SEU-dataset\gearbox\gearset'
+    base_dir = os.environ.get('CNSD_DATA_SEU', r'E:\301\SEU-dataset\gearbox\gearset')
 
     label_map = {'Health': 0, 'Chipped': 1, 'Miss': 2, 'Root': 3, 'Surface': 4}
     X_list, y_list, cond_list = [], [], []
