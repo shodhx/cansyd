@@ -1,7 +1,5 @@
 import argparse
 import os
-import sys
-import traceback
 
 import numpy as np
 import scipy.stats as stats
@@ -337,12 +335,6 @@ def main():
         print(f'  {s:>6}: {m:.3f} ± {std:.3f}')
 
     print('================ DONE ================')
-
-except Exception:
-        with open('crash_traceback.txt', 'w') as f:
-            traceback.print_exc(file=f)
-        print('CRASHED. Check crash_traceback.txt')
-        sys.exit(1)
 
 
 if __name__ == '__main__':
