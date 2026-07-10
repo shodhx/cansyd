@@ -9,7 +9,6 @@
 [![Version](https://img.shields.io/badge/version-1.0.0-informational.svg)](CHANGELOG.md)
 [![CI](https://img.shields.io/badge/CI-ruff%20%2B%20pytest-16a34a.svg)](.github/workflows)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
-[![DOI](https://img.shields.io/badge/DOI-pending-lightgrey.svg)](#citation)
 
 **A five-layer framework that _verifies_ bearing-fault diagnoses against physics and causal structure — instead of trusting a neural network's confidence alone.**
 

@@ -1,4 +1,4 @@
-# Changelog
+# Changelog (v1.0.0)
 
 All notable changes to CNSD are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project
@@ -31,7 +31,7 @@ adheres to semantic versioning once it reaches 1.0.
 - Changed rung-3 continuous degradation outcome (RMS) for unit-level counterfactuals (#20)
 
 ### Notes
-- Pre-1.0 research software. Interfaces may change. Not intended for
+- Interfaces may change. Not intended for
   safety-critical deployment without independent validation.
 
 ## History
