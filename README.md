@@ -358,7 +358,7 @@ If you use CNSD, please cite:
 
 ```bibtex
 @software{cnsd2026,
-  title   = {CNSD: Causal Neuro-Symbolic Diagnosis for Bearing Fault Diagnosis},
+  title   = {CNSD: Causal Neuro-Symbolic Diagnosis},
   author  = {Prasad, Abhimanyu and Mahmud, Kazi Tasfin},
   year    = {2026},
   url     = {https://github.com/abhiprd2000/CNSD},
