@@ -16,214 +16,169 @@ A running log of every validation run, benchmark, and cross-domain test for CNSD
 
 | # | Experiment | Domain | Status |
 |---|------------|--------|--------|
-| 1 | CWRU baseline (Protocol B) | Bearing (CWRU) | preliminary |
-| 2 | Threshold sweep | Bearing (CWRU) | preliminary |
-| 3 | Cross-condition robustness (AWGN) | Bearing (CWRU) | preliminary |
-| 4 | Multi-seed headline | Bearing (CWRU) | planned |
-| 5 | Cross-domain: SEU gearbox | Gear (SEU) | preliminary (failed) |
-| 6 | Cross-domain: Paderborn (PU) | Bearing (PU) | planned |
+| 1 | CWRU (Protocol B & Cross-Domain Robustness) | Bearing (CWRU) | validated |
+| 2 | PU (Cross-Domain RPM Split) | Bearing (PU) | validated |
+| 3 | XJTU-SY (Cross-Domain Split) | Bearing (XJTU-SY) | validated |
+| 4 | Causal Layer Analysis (ATE) | All Bearings | validated |
+| 5 | SEU Gearbox Evaluation | Gear (SEU) | validated (FAILED) |
 
 ---
 
-## 1. CWRU baseline — Protocol B (cross-load)
-
-* **Status:** preliminary
-* **Purpose:** confirm the full five-layer pipeline runs end-to-end on real CWRU and establish the baseline diagnosis result.
-* **Setup:** train loads 0–2, test load 3. All 10 classes. 12 kHz, window 1024.
-
-**Run record**
-```text
-commit:   cd7771ab3668caf9b33109c3a0a9d89f24fd111c
-command:  python validate_run.py --seed 42
-data:     5806 train / 2019 test samples
-```
-
-**Layer-2 physics verification rate**
-| Verdict | Rate |
-|---------|------|
-| CONFIRMED | TBD |
-| CONFLICT | TBD |
-| INCONCLUSIVE | TBD |
-
-**Headline — CNN accuracy by physics verdict**
-| Verdict | n | CNN accuracy |
-|---------|---|--------------|
-| CONFIRMED | TBD | TBD |
-| CONFLICT | TBD | TBD |
-| INCONCLUSIVE | TBD | TBD |
-| **Gap (CONFIRMED - CONFLICT)** | | **TBD** |
-
-* **Causal (Layer 3)** — `do(Z)`: rung *TBD*, max_contrast *TBD*, p *TBD*
-* **Counterfactual (Layer 3B)**: DoWhy available *TBD*; method *TBD*
-* **Notes / limitations**: record the INCONCLUSIVE rate and any seed drift.
-
----
-
-## 2. CWRU Threshold Sweep — Held-out Calibration Split
-
-* **Status:** preliminary
-* **Purpose:** rigorously prove that filtering by physics verification increases CNN reliability, avoiding test-set leakage by tuning the threshold `tau` on a completely unseen calibration split.
-* **Setup:** CNN trained only on Motor Loads 0 and 1. The calibration set (Load 2) was completely saturated (CNN achieved 100% accuracy, gap=+0.000 at all tau), so no threshold could be meaningfully selected. `tau` defaulted to the sweep floor (`1.0`). To prove the physics filtering is robust and not just a fluke at `1.0`, the Test Set (Load 3) was evaluated across multiple thresholds.
-
-**Run record**
-```text
-command:  python threshold_sweep.py
-data:     3793 train / 2013 calib / 2019 test samples
-frozen_tau: 1.0 (floor)
-```
-
-**Layer-2 physics verification rate (Load 3 Test Set at tau=1.0)**
-| Verdict | Rate |
-|---------|------|
-| CONFIRMED | 50.8% |
-| CONFLICT | 48.9% |
-| INCONCLUSIVE | 0.2% |
-
-**Headline — Test-Set Robustness Check (Load 3 Test Set)**
-| Threshold (`tau`) | CONFIRMED Acc | CONFLICT Acc | **Gap** |
-|-------------------|---------------|--------------|---------|
-| 1.0 | 0.950 | 0.805 | **+0.146** |
-| 2.0 | 0.988 | 0.779 | **+0.210** |
-| 3.0 | 1.000 | 0.783 | **+0.217** |
-| 4.0 | 1.000 | 0.875 | **+0.125** |
-
-* **Notes / limitations:** Despite the saturated calibration set, the gap on the completely unseen Test Set remains massively positive across *all* thresholds (peaking at +0.217 at `tau=3.0`). This strongly proves that the physics engine is mathematically robust at filtering unreliable CNN predictions regardless of the exact threshold chosen.
-
----
-
-## 5. Cross-domain — SEU gearbox (GearProvider)
-
-* **Status:** preliminary (failed validation)
-* **Purpose:** demonstrate the framework is genuinely domain-agnostic — same engine, different machine class, only the provider changes.
-* **Setup:** full pipeline on SEU gearset using `GearProvider` (gear-mesh physics). `N_TEETH_INPUT` confirmed against rig spec; fixed channel chosen up front; threshold tuned on a held-out split.
-
-**Run record**
-```text
-commit:   <PENDING PR 12 MERGE>
-command:  python validate_seu.py
-data:     5115 train / 5115 test samples
-n_teeth_input: 20 | channel: 2 (planetary x-axis)
-```
-
-**Layer-2 physics verification rate**
-| Verdict | Rate |
-|---------|------|
-| CONFIRMED | 0.2% |
-| CONFLICT | 0.3% |
-| INCONCLUSIVE | 99.5% |
-
-**Headline — CNN accuracy by physics verdict**
-| Verdict | n | CNN accuracy |
-|---------|---|--------------|
-| CONFIRMED | 9 | 0.333 |
-## 6. Paper Deliverables & Rung-3 Validation (PR #19/20)
+## 1. CWRU (Protocol B & Cross-Domain Robustness)
 
 * **Status:** validated
-* **Purpose:** Implement the full 5-layer pipeline and validate the Rung-3 continuous counterfactuals.
+* **Purpose:** Confirm the five-layer pipeline runs end-to-end on real CWRU data, establish baseline diagnosis results across multiple confidence thresholds, and perform a rigorous 20-seed benchmark against uncertainty baselines.
+* **Setup:** Train: Loads 0–1 (3793 samples). Calibration: Load 2 (2013 samples). Test: Load 3 (2019 samples). 12 kHz, window 1024.
 
-**Rung-3 Validation Findings (Continuous RMS):**
-By updating the Rung-3 Structural Causal Model to output a continuous vibration RMS rather than a binary label (PR #20), we physically proved the irreversibility of the bearing faults. When intervening on speed (Z) for an already broken bearing, the continuous delta in RMS was exactly `-0.0014` in both directions (speed drop and speed increase) on the XJTU-SY dataset.
-
-This confirms the two-rung validation strategy:
-1. **Rung-3 (RMS):** Proves physical irreversibility of the fault (delta ≈ 0). Intervening on operating conditions does not meaningfully alter the physical damage signature.
-2. **Rung-1/2 (Sensitivity):** Provides the actionable risk shift for operators, mapping changes in condition to the CNN's learned decision boundaries.
-
-**Headline — CNN accuracy by physics verdict**
-| Verdict | n | CNN accuracy |
-|---------|---|--------------|
-| CONFIRMED | TBD | TBD |
-| CONFLICT | TBD | TBD |
-| INCONCLUSIVE | TBD | TBD |
-| **Gap (CONFIRMED - CONFLICT)** | | **TBD** |
-
-* **Causal (Layer 3)** — `do(Z)`: rung *TBD*, max_contrast *TBD*, p *TBD*
-* **Counterfactual (Layer 3B)**: DoWhy available *TBD*; method *TBD*
-* **Notes / limitations**: record the INCONCLUSIVE rate and any seed drift.
-
----
-
-## 2. CWRU Threshold Sweep — Held-out Calibration Split
-
-* **Status:** preliminary
-* **Purpose:** rigorously prove that filtering by physics verification increases CNN reliability, avoiding test-set leakage by tuning the threshold `tau` on a completely unseen calibration split.
-* **Setup:** CNN trained only on Motor Loads 0 and 1. The calibration set (Load 2) was completely saturated (CNN achieved 100% accuracy, gap=+0.000 at all tau), so no threshold could be meaningfully selected. `tau` defaulted to the sweep floor (`1.0`). To prove the physics filtering is robust and not just a fluke at `1.0`, the Test Set (Load 3) was evaluated across multiple thresholds.
+### 1a. Threshold Sweep (Single Seed)
 
 **Run record**
 ```text
-command:  python threshold_sweep.py
-data:     3793 train / 2013 calib / 2019 test samples
-frozen_tau: 1.0 (floor)
+commit:   eb2439a1ab9c (or latest)
+command:  python -m validation.cwru_sweep
+data:     3793 train / 2013 calib / 2019 test
 ```
 
-**Layer-2 physics verification rate (Load 3 Test Set at tau=1.0)**
-| Verdict | Rate |
-|---------|------|
-| CONFIRMED | 50.8% |
-| CONFLICT | 48.9% |
-| INCONCLUSIVE | 0.2% |
+Calibration saturated (gap=0.000), defaulted to tau=1.0.
 
-**Headline — Test-Set Robustness Check (Load 3 Test Set)**
-| Threshold (`tau`) | CONFIRMED Acc | CONFLICT Acc | **Gap** |
-|-------------------|---------------|--------------|---------|
-| 1.0 | 0.950 | 0.805 | **+0.146** |
-| 2.0 | 0.988 | 0.779 | **+0.210** |
-| 3.0 | 1.000 | 0.783 | **+0.217** |
-| 4.0 | 1.000 | 0.875 | **+0.125** |
+**Headline — CNN accuracy by physics verdict**
+| Tau | Verdict | n | CNN accuracy | Physics GAP |
+|-----|---------|---|--------------|-------------|
+| 1.0 | CONFIRMED | 1100 | 0.930 | +0.117 |
+| 1.0 | CONFLICT | 919 | 0.813 | |
+| 2.0 | CONFIRMED | 1232 | 0.976 | +0.198 |
+| 2.0 | CONFLICT | 284 | 0.778 | |
+| 3.0 | CONFIRMED | 945 | 1.000 | +0.200 |
+| 3.0 | CONFLICT | 20 | 0.800 | |
 
-* **Notes / limitations:** Despite the saturated calibration set, the gap on the completely unseen Test Set remains massively positive across *all* thresholds (peaking at +0.217 at `tau=3.0`). This strongly proves that the physics engine is mathematically robust at filtering unreliable CNN predictions regardless of the exact threshold chosen.
+*Physics verification rate at tau=1.0:* CONFIRMED=54.5%, CONFLICT=45.5%, INCONCLUSIVE=0.0%
 
----
-
-## 5. Cross-domain — SEU gearbox (GearProvider)
-
-* **Status:** preliminary (failed validation)
-* **Purpose:** demonstrate the framework is genuinely domain-agnostic — same engine, different machine class, only the provider changes.
-* **Setup:** full pipeline on SEU gearset using `GearProvider` (gear-mesh physics). `N_TEETH_INPUT` confirmed against rig spec; fixed channel chosen up front; threshold tuned on a held-out split.
+### 1b. 20-Seed Robustness Benchmark vs. Ensembles
 
 **Run record**
 ```text
-commit:   <PENDING PR 12 MERGE>
-command:  python validate_seu.py
-data:     5115 train / 5115 test samples
-n_teeth_input: 20 | channel: 2 (planetary x-axis)
+command:  python -m validation.multi_seed_benchmark --dataset cwru
+seeds:    42-61
 ```
 
-**Layer-2 physics verification rate**
-| Verdict | Rate |
-|---------|------|
-| CONFIRMED | 0.2% |
-| CONFLICT | 0.3% |
-| INCONCLUSIVE | 99.5% |
+**FINAL AGGREGATED RESULTS (20 Seeds)**
+- **Physics GAP:** +0.189 ± 0.235
+- **Softmax GAP:** +0.136 ± 0.087
+- **MC-Drop GAP:** +0.134 ± 0.085
+- **Ensemble GAP:** +0.074 ± 0.084
+
+**Statistical Significance (Physics vs Ensemble):**
+- **Paired t-test p-value:** 0.0720
+- **Average Matched Coverage:** N = 1100.3 / 2019 (54.50%)
+
+---
+
+## 2. PU (Cross-Domain RPM Split)
+
+* **Status:** validated
+* **Purpose:** Validate cross-domain generalization and robustness on the Paderborn University dataset, comparing physics-guided neurosymbolic verification against ensemble uncertainty.
+* **Setup:** Train: 900 RPM (4961 samples). Calib+Test: 1500 RPM (7457+7457 samples). Window 4096.
+
+### 2a. Threshold Sweep (Single Seed)
+
+**Run record**
+```text
+command:  python -m validation.pu
+data:     4961 train / 7457 calib / 7457 test
+```
+*Baseline CNN Accuracy:* 0.618
+*Selected optimal tau:* 3.5
 
 **Headline — CNN accuracy by physics verdict**
-| Verdict | n | CNN accuracy |
-|---------|---|--------------|
-| CONFIRMED | 9 | 0.333 |
-| CONFLICT | 17 | 0.824 |
-| INCONCLUSIVE | 5089 | 0.514 |
-| **Gap (CONFIRMED - CONFLICT)** | | **-0.491 (FAILED)** |
+| Tau | Verdict | n | CNN accuracy | Physics GAP |
+|-----|---------|---|--------------|-------------|
+| 1.0 | CONFIRMED | 3336 | 0.888 | +0.489 |
+| 1.0 | CONFLICT | 4121 | 0.399 | |
+| 2.0 | CONFIRMED | 2763 | 0.928 | +0.594 |
+| 2.0 | CONFLICT | 3148 | 0.334 | |
+| 2.5 | CONFIRMED | 2097 | 0.981 | +0.746 |
+| 2.5 | CONFLICT | 1894 | 0.235 | |
+| 3.0 | CONFIRMED | 1776 | 0.995 | +0.821 |
+| 3.0 | CONFLICT | 1110 | 0.174 | |
 
-* **Known caveats to report honestly:** The accuracy gap is currently backwards and practically noise due to a 99.5% inconclusive rate. This is pending a strict `tau` threshold calibration sweep for gear physics, as well as confirming that GMF strength aligns with the same numerical scale as bearing physics.
+### 2b. 20-Seed Robustness Benchmark vs. Ensembles
 
-## 6. Paderborn University (PU) Dataset - Cross-Domain Domain Shift (Speed)
+**Run record**
+```text
+command:  python -m validation.multi_seed_benchmark --dataset pu
+seeds:    42-61
+```
 
-**Dataset**: Authentic bearing fatigue damages (FAG 6203 deep groove ball bearings).
-**Objective**: Eliminate data leakage by explicitly testing the model's ability to generalize across changing physical operating conditions (Domain Shift). The CNN is trained exclusively on 900 RPM data and tested exclusively on 1500 RPM data.
-**Physics Config**: D=28.5mm, d=6.75mm, N=8, f_s=64kHz. Baseline CNN Accuracy: 0.704.
+**FINAL AGGREGATED RESULTS (20 Seeds)**
+- **Physics GAP:** +0.538 ± 0.136
+- **Softmax GAP:** +0.247 ± 0.215
+- **MC-Drop GAP:** +0.334 ± 0.091
+- **Ensemble GAP:** +0.386 ± 0.120
 
-### Test-Set Robustness Check (1500 RPM Test Split)
-To ensure the gap is robust and not just overfitted to a specific threshold, the test set was evaluated across multiple `tau` values:
+**Statistical Significance (Physics vs Ensemble):**
+- **Paired t-test p-value:** 0.0032
 
-| Threshold (`tau`) | CONFIRMED Acc | CONFLICT Acc | **Gap** | Inconclusive Rate |
-|-------------------|---------------|--------------|---------|-------------------|
-| 1.0 | 0.918 | 0.553 | **+0.365** | 0.1% |
-| 2.0 | 0.953 | 0.562 | **+0.390** | 25.9% |
-| 2.5 | 0.977 | 0.560 | **+0.417** | 46.3% |
-| 3.0 | 0.987 | 0.566 | **+0.421** | 58.5% |
+---
 
-**Notes**:
-Because the baseline CNN was trained only on 900 RPM data, its pattern matching degraded when tested on 1500 RPM data (Baseline Accuracy crashed to 70.4%). The Physics Engine dynamically adjusts for RPM and isolates reliable predictions. As shown above, the gap remains strongly positive across all thresholds, peaking at +0.421.
+## 3. XJTU-SY (Cross-Domain Split)
 
-**Known Limitations**: 
-- **High Inconclusive Rate**: At the optimally calibrated threshold (`tau=2.5`), the engine flags ~46% of predictions as INCONCLUSIVE. This is a known trade-off of the strict verification process.
-- **Scope**: Demonstrated strong robustness on the PU speed-shift task (single dataset, single seed).
+* **Status:** validated
+* **Purpose:** Provide a rigorous validation across a third major bearing dataset to confirm generalizability of the physics-guided diagnostic rules.
+
+**Run record**
+```text
+command:  python -m validation.multi_seed_benchmark --dataset xjtusy
+seeds:    42-61
+```
+
+**FINAL AGGREGATED RESULTS (20 Seeds)**
+- **Physics GAP:** +0.478 ± 0.058
+- **Softmax GAP:** +0.172 ± 0.055
+- **MC-Drop GAP:** +0.371 ± 0.059
+- **Ensemble GAP:** +0.458 ± 0.105
+
+**Statistical Significance (Physics vs Ensemble):**
+- **Paired t-test p-value:** 0.4823
+- **Average Matched Coverage:** N = 3442.3 / 11890 (28.95%)
+
+---
+
+## 4. Causal Layer Analysis (ATE)
+
+* **Status:** validated
+* **Purpose:** Establish the causal Average Treatment Effect (ATE) of the physics-guided verification process on prediction accuracy using DoWhy across all three bearing datasets.
+
+**Run record**
+```text
+command:  python -m validation.generate_tables
+```
+
+**ATE Results by Dataset**
+| Dataset | ATE | 95% Confidence Interval | p-value | Interpretation |
+|---------|-----|-------------------------|---------|----------------|
+| CWRU | +0.0162 | [0.0154, 0.0171] | 0.0000 | Significant positive causal effect on accuracy. |
+| PU | -0.0832 | [-0.0845, -0.0818] | 0.0000 | Negative ATE; physics layer is overly conservative on PU. |
+| XJTU-SY | -0.0157 | [-0.0303, -0.0017] | 0.0240 | Negative ATE; similar conservatism to PU. |
+
+---
+
+## 5. SEU Gearbox Evaluation [FAILED]
+
+* **Status:** validated (FAILED)
+* **Purpose:** Attempt to generalize the vibration-based kinematics to complex multi-stage gearboxes using the SEU dataset.
+
+**Run record**
+```text
+command:  python validate_run.py --dataset seu
+```
+
+**Headline Results**
+- **INCONCLUSIVE rate:** 99.5%
+- **CONFIRMED rate:** 0.2%
+- **CONFLICT rate:** 0.3%
+- **Physics GAP:** -0.491
+
+**Analysis & Limitations:**
+The physics verification approach fundamentally failed on the SEU dataset. The rules designed for rolling-element bearings do not transfer to multi-stage helical gears. The system returned INCONCLUSIVE for 99.5% of cases because the expected harmonic structure was not present, and in the rare cases where it made a definitive judgment, it was often incorrect (negative GAP). 
+
+**Future Work:** This highlights an honest limitation of the current physics library. To support gearboxes, a completely new set of kinematic rules must be defined and implemented in the library.
