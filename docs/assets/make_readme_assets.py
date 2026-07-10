@@ -36,7 +36,7 @@ def hero(path):
     fig, ax = plt.subplots(figsize=(12, 3.4))
     ax.set_xlim(0, 120)
     ax.set_ylim(0, 34)
-    ax.axis("off")
+    ax.axis('off')
     ax.add_patch(plt.Rectangle((0, 0), 120, 34, fc=BG, ec='none', zorder=0))
     # left accent bar
     ax.add_patch(plt.Rectangle((0, 0), 1.4, 34, fc=BLUE, ec='none', zorder=1))
@@ -128,7 +128,7 @@ def architecture(path):
     fig, ax = plt.subplots(figsize=(11, 5.2))
     ax.set_xlim(0, 116)
     ax.set_ylim(0, 60)
-    ax.axis("off")
+    ax.axis('off')
 
     def box(x, y, w, h, title, sub, accent, fc='white'):
         ax.add_patch(
