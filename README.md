@@ -22,7 +22,7 @@
 
 **CNSD (Causal Neuro-Symbolic Diagnosis)** is a Python framework for diagnosing rolling-element **bearing faults** from vibration signals. A neural network proposes a diagnosis; then three independent layers check that proposal against the **physics of the signal** and the **causal structure of the machine**, and a consensus layer turns the result into an actionable maintenance decision.
 
-The problem it solves is **operating-condition shift**: a model trained at one load or speed silently loses accuracy at another, and its confidence — the usual signal for "can I trust this prediction?" — is the first thing to break. CNSD answers a question a plain classifier cannot: *is this predicted fault physically present in the signal, and would it survive a change of operating condition?*
+The problem it solves is **operating-condition shift**: a model trained at one load or speed silently loses accuracy at another, and its confidence (the usual signal for "can I trust this prediction?") is the first thing to break. CNSD answers a question a plain classifier cannot: *is this predicted fault physically present in the signal, and would it survive a change of operating condition?*
 
 ```python
 from cnsd import CNSD, Dataset
@@ -127,7 +127,7 @@ Across three public bearing datasets, we compare reliability estimators at **mat
 
 **Noise robustness.** As additive noise increases, the physics layer catches the ensemble's *confident* errors: **100% at 0 dB on XJTU-SY**, ~40% on the saturated CWRU regime.
 
-> **On the CWRU null.** We report it at equal prominence because it is *evidence*, not a weakness. CNSD's thesis is that mechanistic verification helps where the signal is degraded and the network is unsure — and adds nothing where predictions are already reliable. CWRU's cross-load task is comparatively saturated, so the absence of an advantage there is exactly what the mechanism predicts.
+> **On the CWRU null.** We report it at equal prominence because it is *evidence*, not a weakness. CNSD's thesis is that mechanistic verification helps where the signal is degraded and the network is unsure and adds nothing where predictions are already reliable. CWRU's cross-load task is comparatively saturated, so the absence of an advantage there is exactly what the mechanism predicts.
 
 ---
 
