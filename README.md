@@ -302,7 +302,7 @@ python -m validation.multi_seed_benchmark --dataset xjtusy
 python -m validation.multi_seed_benchmark --dataset cwru
 ```
 
-Seeds are fixed (42–61); numbers should match within run-to-run noise. Data paths are overridable via the `CNSD_DATA_CWRU`, `CNSD_DATA_PU`, and `CNSD_DATA_SEU` environment variables.
+Seeds are fixed (42–61); numbers should match within run-to-run noise. Data paths are overridable via the `CNSD_DATA_CWRU`, `CNSD_DATA_PU`, and `CNSD_DATA_XJTU-SY` environment variables.
 
 ---
 
@@ -335,7 +335,6 @@ CNSD is **v1.0.0** and one step from public release. The framework, physics/caus
 - [x] Pluggable provider registry; dependency-light core
 - [ ] Gear-mesh provider (mechanism-agnostic verification)
 
-......and continued.
 
 See [`ROADMAP.md`](ROADMAP.md) for where CNSD is headed and how to help, and [`CHANGELOG.md`](CHANGELOG.md) for version history.
 
