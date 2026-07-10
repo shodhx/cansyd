@@ -335,8 +335,10 @@ CNSD is **v1.0.0** and one step from public release. The framework, physics/caus
 - [x] Three-dataset cross-domain validation (PU, XJTU-SY, CWRU)
 - [x] Pluggable provider registry; dependency-light core
 - [ ] Gear-mesh provider (mechanism-agnostic verification)
-......and continued
-See [`CHANGELOG.md`](CHANGELOG.md) for version history.
+
+......and continued.
+
+See [`ROADMAP.md`](ROADMAP.md) for where CNSD is headed and how to help, and [`CHANGELOG.md`](CHANGELOG.md) for version history.
 
 ---
 
