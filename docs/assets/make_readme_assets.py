@@ -1,11 +1,11 @@
 """README visual assets for CNSD. Modern, color, GitHub-friendly (renders on
 light and dark). PNG at 2x for crispness."""
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
-import matplotlib.font_manager as fm
 import numpy as np
+from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
 
 plt.rcParams.update({"font.family": "DejaVu Sans", "savefig.bbox": "tight",
                      "savefig.pad_inches": 0.08, "savefig.dpi": 200})
