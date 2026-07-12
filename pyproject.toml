@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
 # Tool configuration only.
 #
 # Packaging is still handled by setup.py, the developer tooling (Ruff, pytest) in their standard modern location.

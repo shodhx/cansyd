@@ -1,0 +1,2 @@
+include LICENSE README.md CHANGELOG.md cansyd_config.yaml
+recursive-include docs/assets *.png
