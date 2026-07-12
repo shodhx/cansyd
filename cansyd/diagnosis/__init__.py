@@ -1,4 +1,4 @@
-"""Diagnosis: the CNSD system orchestrator and the auditable report."""
+"""Diagnosis: the CANSYD system orchestrator and the auditable report."""
 
-from cnsd.diagnosis.report import DiagnosisReport
-from cnsd.diagnosis.system import CNSD
+from cansyd.diagnosis.report import DiagnosisReport
+from cansyd.diagnosis.system import CANSYD

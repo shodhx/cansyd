@@ -1,5 +1,5 @@
 """
-CNSD - Causal Neuro-Symbolic Diagnosis.
+CANSYD - Causal Neuro-Symbolic Diagnosis.
 
 A deployable five-layer fault-diagnosis system for rotating machinery:
 
@@ -11,25 +11,25 @@ A deployable five-layer fault-diagnosis system for rotating machinery:
 
 Quick start:
 
-    from cnsd import CNSD, Dataset
+    from cansyd import CANSYD, Dataset
     data   = Dataset.from_arrays(signals, labels, condition, fs=12000)
-    report = CNSD().fit(data).diagnose(data)
+    report = CANSYD().fit(data).diagnose(data)
     print(report.summary())
 
-Subpackages are independently importable - e.g. `from cnsd.causal import
+Subpackages are independently importable - e.g. `from cansyd.causal import
 intervention_effect_of_condition` does NOT require TensorFlow. Only the full
-CNSD system (which trains the CNN) needs the perception backend.
+CANSYD system (which trains the CNN) needs the perception backend.
 """
 
 __version__ = '1.0.0'
 
-# Lazy top-level names (PEP 562): keeps `from cnsd import CNSD` working without
+# Lazy top-level names (PEP 562): keeps `from cansyd import CANSYD` working without
 # forcing TensorFlow on users who only want the causal / physics / dataset tools.
 _LAZY = {
-    'CNSD': ('cnsd.api', 'CNSD'),
-    'DiagnosisReport': ('cnsd.diagnosis', 'DiagnosisReport'),
-    'Dataset': ('cnsd.datasets', 'Dataset'),
-    'PhysicsConfig': ('cnsd.physics', 'PhysicsConfig'),
+    'CANSYD': ('cansyd.api', 'CANSYD'),
+    'DiagnosisReport': ('cansyd.diagnosis', 'DiagnosisReport'),
+    'Dataset': ('cansyd.datasets', 'Dataset'),
+    'PhysicsConfig': ('cansyd.physics', 'PhysicsConfig'),
 }
 
 __all__ = list(_LAZY)
@@ -41,4 +41,4 @@ def __getattr__(name):
 
         module, attr = _LAZY[name]
         return getattr(importlib.import_module(module), attr)
-    raise AttributeError(f"module 'cnsd' has no attribute '{name}'")
+    raise AttributeError(f"module 'cansyd' has no attribute '{name}'")

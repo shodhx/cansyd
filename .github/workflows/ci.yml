@@ -67,7 +67,7 @@ jobs:
         run: |
           python - <<'PY'
           import importlib
-          for mod in ("cnsd.causal", "cnsd.physics", "cnsd.config", "cnsd.scm"):
+          for mod in ("cansyd.causal", "cansyd.physics", "cansyd.config", "cansyd.scm"):
               importlib.import_module(mod)
               print(f"imported {mod} without TensorFlow")
           PY
@@ -90,4 +90,4 @@ jobs:
           pip install -e .
 
       - name: Import installed package
-        run: python -c "import cnsd; print('cnsd installed and importable')"
+        run: python -c "import cansyd; print('cansyd installed and importable')"

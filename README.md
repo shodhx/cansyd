@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/assets/hero.png" alt="CNSD — Causal Neuro-Symbolic Diagnosis" width="100%">
+<img src="docs/assets/hero.png" alt="CANSYD — Causal Neuro-Symbolic Diagnosis" width="100%">
 
 <br>
 
@@ -18,17 +18,17 @@
 
 ---
 
-## What is CNSD?
+## What is CANSYD?
 
-**CNSD (Causal Neuro-Symbolic Diagnosis)** is a Python framework for diagnosing rolling-element **bearing faults** from vibration signals. A neural network proposes a diagnosis; then three independent layers check that proposal against the **physics of the signal** and the **causal structure of the machine**, and a consensus layer turns the result into an actionable maintenance decision.
+**CANSYD (Causal Neuro-Symbolic Diagnosis)** is a Python framework for diagnosing rolling-element **bearing faults** from vibration signals. A neural network proposes a diagnosis; then three independent layers check that proposal against the **physics of the signal** and the **causal structure of the machine**, and a consensus layer turns the result into an actionable maintenance decision.
 
-The problem it solves is **operating-condition shift**: a model trained at one load or speed silently loses accuracy at another, and its confidence (the usual signal for "can I trust this prediction?") is the first thing to break. CNSD answers a question a plain classifier cannot: *is this predicted fault physically present in the signal, and would it survive a change of operating condition?*
+The problem it solves is **operating-condition shift**: a model trained at one load or speed silently loses accuracy at another, and its confidence (the usual signal for "can I trust this prediction?") is the first thing to break. CANSYD answers a question a plain classifier cannot: *is this predicted fault physically present in the signal, and would it survive a change of operating condition?*
 
 ```python
-from cnsd import CNSD, Dataset
+from cansyd import CANSYD, Dataset
 
 data   = Dataset.from_arrays(signals, labels, condition, fs=12000)
-report = CNSD().fit(data).diagnose(data)
+report = CANSYD().fit(data).diagnose(data)
 
 print(report.summary())
 #  HIGH_CONFIDENCE: 61%   RELIABLE: 22%   UNCERTAIN: 9%   MANUAL_REVIEW: 8%
@@ -50,7 +50,7 @@ print(report.summary())
 - [Configuration](#-configuration)
 - [Repository structure](#-repository-structure)
 - [Reproducing the experiments](#-reproducing-the-experiments)
-- [Extending CNSD](#-extending-cnsd-to-new-machinery)
+- [Extending CANSYD](#-extending-cansyd-to-new-machinery)
 - [Project status & roadmap](#-project-status--roadmap)
 - [Contributing](#-contributing)
 - [Citation](#-citation)
@@ -63,22 +63,22 @@ print(report.summary())
 **Install** (core is dependency-light — no TensorFlow required to use the physics and causal tools):
 
 ```bash
-pip install cnsd            # core
-pip install "cnsd[all]"     # + perception (TensorFlow) and counterfactual (DoWhy)
+pip install cansyd            # core
+pip install "cansyd[all]"     # + perception (TensorFlow) and counterfactual (DoWhy)
 ```
 
 **Diagnose a dataset in five lines.** Bring your own arrays — signals, labels, the operating condition per window, and the sampling rate:
 
 ```python
 import numpy as np
-from cnsd import CNSD, Dataset
+from cansyd import CANSYD, Dataset
 
 X    = np.random.randn(200, 1024)          # 200 windows of 1024 samples
 y    = np.random.randint(0, 10, 200)       # fault labels
 cond = np.random.choice([0, 1, 2, 3], 200) # operating condition per window
 data = Dataset.from_arrays(X, y, cond, fs=12000)
 
-report = CNSD().fit(data).diagnose(data)
+report = CANSYD().fit(data).diagnose(data)
 
 print(report.summary())
 for statement in report.root_causes()[:5]:
@@ -93,10 +93,10 @@ Runnable versions live in [`examples/`](examples/): [`quickstart.py`](examples/q
 
 ## 🧠 How it works
 
-CNSD is a **propose → verify → decide** pipeline. The network only *proposes*; the diagnosis is not trusted until physics and causal reasoning have checked it.
+CANSYD is a **propose → verify → decide** pipeline. The network only *proposes*; the diagnosis is not trusted until physics and causal reasoning have checked it.
 
 <div align="center">
-<img src="docs/assets/architecture.png" alt="CNSD five-layer architecture" width="95%">
+<img src="docs/assets/architecture.png" alt="CANSYD five-layer architecture" width="95%">
 </div>
 
 | Layer | Role | What it produces |
@@ -107,7 +107,7 @@ CNSD is a **propose → verify → decide** pipeline. The network only *proposes
 | **3B · Counterfactual (Rung 3)** | On an invertible SCM, asks how the diagnosis would move under a different condition, using a continuous, model-independent severity outcome (RMS). | per-unit counterfactual stability |
 | **4 · Consensus** | Fuses the network confidence with the physics verdict. **A physical conflict can veto a confident network.** | `HIGH_CONFIDENCE` / `RELIABLE` / `UNCERTAIN` / `MANUAL_REVIEW` |
 
-**The core idea in one sentence:** a bearing defect strikes at a *characteristic frequency* fixed by geometry and shaft speed — a signature that is invariant to load by mechanical law, computable at any operating condition, and never consulted by a plain classifier. CNSD reads it directly and uses it to verify, and if necessary overrule, the network. See [`docs/architecture.md`](docs/architecture.md) for the full design.
+**The core idea in one sentence:** a bearing defect strikes at a *characteristic frequency* fixed by geometry and shaft speed — a signature that is invariant to load by mechanical law, computable at any operating condition, and never consulted by a plain classifier. CANSYD reads it directly and uses it to verify, and if necessary overrule, the network. See [`docs/architecture.md`](docs/architecture.md) for the full design.
 
 ---
 
@@ -127,7 +127,7 @@ Across three public bearing datasets, we compare reliability estimators at **mat
 
 **Noise robustness.** As additive noise increases, the physics layer catches the ensemble's *confident* errors: **100% at 0 dB on XJTU-SY**, ~40% on the saturated CWRU regime.
 
-> **On the CWRU null.** We report it at equal prominence because it is *evidence*, not a weakness. CNSD's thesis is that mechanistic verification helps where the signal is degraded and the network is unsure and adds nothing where predictions are already reliable. CWRU's cross-load task is comparatively saturated, so the absence of an advantage there is exactly what the mechanism predicts.
+> **On the CWRU null.** We report it at equal prominence because it is *evidence*, not a weakness. CANSYD's thesis is that mechanistic verification helps where the signal is degraded and the network is unsure and adds nothing where predictions are already reliable. CWRU's cross-load task is comparatively saturated, so the absence of an advantage there is exactly what the mechanism predicts.
 
 ---
 
@@ -152,38 +152,38 @@ Across three public bearing datasets, we compare reliability estimators at **mat
 
 ```bash
 # from PyPI (core only — numpy / scipy / scikit-learn / pyyaml)
-pip install cnsd
+pip install cansyd
 
 # with optional extras
-pip install "cnsd[perception]"      # 1-D CNN / S-JEPA backbone (TensorFlow, Keras)
-pip install "cnsd[counterfactual]"  # Rung-3 counterfactuals (DoWhy, pandas, networkx)
-pip install "cnsd[all]"             # everything
+pip install "cansyd[perception]"      # 1-D CNN / S-JEPA backbone (TensorFlow, Keras)
+pip install "cansyd[counterfactual]"  # Rung-3 counterfactuals (DoWhy, pandas, networkx)
+pip install "cansyd[all]"             # everything
 ```
 
 **From source** (for development or exact reproduction):
 
 ```bash
-git clone https://github.com/abhiprd2000/CNSD.git
-cd CNSD
+git clone https://github.com/shodhx/cansyd.git
+cd CANSYD
 pip install -e ".[all]"
 # or pin the exact validated environment:
 pip install -r requirements.txt
 ```
 
-> The core install deliberately avoids heavy dependencies: `from cnsd.causal import intervention_effect_of_condition` and the physics engine work **without TensorFlow**. Only training the CNN perception layer needs the `perception` extra.
+> The core install deliberately avoids heavy dependencies: `from cansyd.causal import intervention_effect_of_condition` and the physics engine work **without TensorFlow**. Only training the CNN perception layer needs the `perception` extra.
 
 ---
 
 ## 🛠️ Usage
 
-CNSD exposes one clean object with four verbs.
+CANSYD exposes one clean object with four verbs.
 
 ### Diagnose
 
 ```python
-from cnsd import CNSD, Dataset
+from cansyd import CANSYD, Dataset
 
-model  = CNSD(config="cnsd_config.yaml")   # or CNSD() for defaults
+model  = CANSYD(config="cansyd_config.yaml")   # or CANSYD() for defaults
 report = model.fit(data).diagnose(data)
 
 report.summary()             # decision + verification-rate breakdown
@@ -216,10 +216,10 @@ scm = model.scm_analysis(data)   # the fitted SCM behind the causal layers
 
 ## ⚙️ Configuration
 
-CNSD is driven by a single YAML file. The taxonomy, sampling rate, and bearing geometry live in one place, so a new machine is onboarded by editing config — not code.
+CANSYD is driven by a single YAML file. The taxonomy, sampling rate, and bearing geometry live in one place, so a new machine is onboarded by editing config — not code.
 
 ```yaml
-# cnsd_config.yaml
+# cansyd_config.yaml
 dataset:
   name: "cwru"
   sampling_rate_hz: 12000
@@ -241,14 +241,14 @@ taxonomy:
 ## 🗂️ Repository structure
 
 ```
-CNSD/
+CANSYD/
 ├── README.md                   # you are here
 ├── LICENSE                     # MIT
-├── cnsd_config.yaml            # example configuration
+├── cansyd_config.yaml            # example configuration
 ├── requirements.txt            # exact validated environment
 ├── setup.py / pyproject.toml   # packaging
-├── cnsd/                       # the framework (installable package)
-│   ├── api.py                  #   public CNSD class: diagnose / explain / what_if / scm_analysis
+├── cansyd/                       # the framework (installable package)
+│   ├── api.py                  #   public CANSYD class: diagnose / explain / what_if / scm_analysis
 │   ├── builder.py              #   assembles the five-layer pipeline from config
 │   ├── config.py               #   YAML config loader
 │   ├── perception/             #   Layer 1 — 1-D CNN + S-JEPA backbone
@@ -302,32 +302,32 @@ python -m validation.multi_seed_benchmark --dataset xjtusy
 python -m validation.multi_seed_benchmark --dataset cwru
 ```
 
-Seeds are fixed (42–61); numbers should match within run-to-run noise. Data paths are overridable via the `CNSD_DATA_CWRU`, `CNSD_DATA_PU`, and `CNSD_DATA_XJTU-SY` environment variables.
+Seeds are fixed (42–61); numbers should match within run-to-run noise. Data paths are overridable via the `CANSYD_DATA_CWRU`, `CANSYD_DATA_PU`, and `CANSYD_DATA_XJTU-SY` environment variables.
 
 ---
 
-## 🔧 Extending CNSD to new machinery
+## 🔧 Extending CANSYD to new machinery
 
 The physics layer is a registry of **providers**. `bearing` is validated here; `gear` and a zero-knowledge `spectral` fallback ship alongside it. A new mechanism is one class:
 
 ```python
-from cnsd.physics.providers import register_provider, BaseProvider
+from cansyd.physics.providers import register_provider, BaseProvider
 
 class MyProvider(BaseProvider):
     def characteristic_frequencies(self, rpm, geometry): ...
     def dominant_family(self, envelope_spectrum): ...
 
 register_provider("my_machine", MyProvider)
-# now: domain.type = "my_machine" in cnsd_config.yaml
+# now: domain.type = "my_machine" in cansyd_config.yaml
 ```
 
-> **Scope note.** CNSD is validated on **bearings**, where the characteristic-frequency physics is exact. See [`EXPERIMENTS.md`](EXPERIMENTS.md) for all logs. 
+> **Scope note.** CANSYD is validated on **bearings**, where the characteristic-frequency physics is exact. See [`EXPERIMENTS.md`](EXPERIMENTS.md) for all logs. 
 
 ---
 
 ## 📌 Project status & roadmap
 
-CNSD is **v1.0.0** and one step from public release. The framework, physics/causal/counterfactual layers, and cross-domain benchmarks are complete and tested.
+CANSYD is **v1.0.0** and one step from public release. The framework, physics/causal/counterfactual layers, and cross-domain benchmarks are complete and tested.
 
 - [x] Five-layer pipeline with physics veto
 - [x] Rung-2 intervention + refutation suite; Rung-3 counterfactual
@@ -336,7 +336,7 @@ CNSD is **v1.0.0** and one step from public release. The framework, physics/caus
 - [ ] Gear-mesh provider (mechanism-agnostic verification)
 
 
-See [`ROADMAP.md`](ROADMAP.md) for where CNSD is headed and how to help, and [`CHANGELOG.md`](CHANGELOG.md) for version history.
+See [`ROADMAP.md`](ROADMAP.md) for where CANSYD is headed and how to help, and [`CHANGELOG.md`](CHANGELOG.md) for version history.
 
 ---
 
@@ -354,14 +354,14 @@ Please also read the [Code of Conduct](CODE_OF_CONDUCT.md) and, for vulnerabilit
 
 ## 📝 Citation
 
-If you use CNSD, please cite:
+If you use CANSYD, please cite:
 
 ```bibtex
-@software{cnsd2026,
-  title   = {CNSD: Causal Neuro-Symbolic Diagnosis},
+@software{cansyd2026,
+  title   = {CANSYD: Causal Neuro-Symbolic Diagnosis},
   author  = {Prasad, Abhimanyu and Mahmud, Kazi Tasfin},
   year    = {2026},
-  url     = {https://github.com/abhiprd2000/CNSD},
+  url     = {https://github.com/shodhx/cansyd},
   version = {1.0.0},
 }
 ```
@@ -371,7 +371,7 @@ If you use CNSD, please cite:
 
 ## 📄 License
 
-Released under the [MIT License](LICENSE). © 2026 the CNSD authors.
+Released under the [MIT License](LICENSE). © 2026 the CANSYD authors.
 
 ---
 

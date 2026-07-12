@@ -1,9 +1,9 @@
 import numpy as np
 import tensorflow as tf
 
-from cnsd import Dataset
-from cnsd.datasets.xjtusy import load_xjtusy_domain_split
-from cnsd.diagnosis.system import CNSD
+from cansyd import Dataset
+from cansyd.datasets.xjtusy import load_xjtusy_domain_split
+from cansyd.diagnosis.system import CANSYD
 
 
 def headline_accuracy_by_verdict(report, y_true):
@@ -67,7 +67,7 @@ if __name__ == '__main__':
         f'Train (2100 RPM)={len(train_data.y)} | Calib (2250 RPM)={len(y_calib)} | Test (2250 RPM)={len(y_test)}'
     )
 
-    model = CNSD()
+    model = CANSYD()
 
     print('\n[1] Training Neural Network on 2100 RPM Source Data...')
     model.fit(train_data, epochs=20)

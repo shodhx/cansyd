@@ -91,7 +91,7 @@ def what_if(
         # abduction recovers noise from Z,X,Y; Y is recomputed counterfactually
         return counterfactual_for_unit(scm, row, condition_cf)
 
-    from cnsd.counterfactual.sensitivity import local_sensitivity
+    from cansyd.counterfactual.sensitivity import local_sensitivity
 
     if X_sample is None:
         X_sample = np.array([signal_feature_value])

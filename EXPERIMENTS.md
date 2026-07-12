@@ -1,5 +1,5 @@
 # Experiments
-A running log of every validation run, benchmark, and cross-domain test for CNSD.
+A running log of every validation run, benchmark, and cross-domain test for CANSYD.
 
 **Discipline for this file** (so it stays a record, not a trophy case):
 - Every entry is tied to a **commit** and a **fixed seed**. The commit's git timestamp is the authoritative date — no manually entered dates.

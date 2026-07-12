@@ -1,5 +1,5 @@
 """
-validate_cwru.py - one clean end-to-end validation of the CNSD pipeline on CWRU.
+validate_cwru.py - one clean end-to-end validation of the CANSYD pipeline on CWRU.
 
 Purpose: prove the rebuilt system actually RUNS on real data and produces the
 numbers the paper claims - before writing the paper. This is a validation run,
@@ -20,11 +20,11 @@ to return X (n,1024), y (n,), cond (n,) - the only dataset-specific code here.
 import numpy as np
 import tensorflow as tf
 
-from cnsd import Dataset
-from cnsd.causal import compute_vibration_rms, signal_kurtosis
-from cnsd.counterfactual import build_scm, counterfactual_for_unit, dowhy_gcm_available
-from cnsd.diagnosis.system import CNSD
-from cnsd.physics import PhysicsConfig
+from cansyd import Dataset
+from cansyd.causal import compute_vibration_rms, signal_kurtosis
+from cansyd.counterfactual import build_scm, counterfactual_for_unit, dowhy_gcm_available
+from cansyd.diagnosis.system import CANSYD
+from cansyd.physics import PhysicsConfig
 
 
 # ── the ONLY dataset-specific code: return raw arrays from your CWRU files ────
@@ -33,7 +33,7 @@ def load_cwru():
 
     from scipy.io import loadmat
 
-    base_dir = os.environ.get('CNSD_DATA_CWRU', r'E:\301\CWRU-dataset')
+    base_dir = os.environ.get('CANSYD_DATA_CWRU', r'E:\301\CWRU-dataset')
     if not os.path.exists(base_dir):
         raise FileNotFoundError(f'CWRU dataset not found at {base_dir}')
 
@@ -131,7 +131,7 @@ def main():
     tf.random.set_seed(42)
 
     print('=' * 68)
-    print('CNSD VALIDATION RUN (CWRU, Protocol B)')
+    print('CANSYD VALIDATION RUN (CWRU, Protocol B)')
     print('=' * 68)
 
     # 1. data
@@ -169,7 +169,7 @@ def main():
     print(f'[test_data] {test_data.summary()}')
 
     # 2. fit + 3. diagnose (Layers 1,2,4 live)
-    model = CNSD()
+    model = CANSYD()
     model.fit(train_data, epochs=30)
     report = model.diagnose(test_data)
     print(f'\n[pipeline] {report.summary()}')

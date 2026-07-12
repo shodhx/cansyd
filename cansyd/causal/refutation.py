@@ -28,7 +28,7 @@ def refute_condition_effect(condition, fault, extra_confounders=None):
 
     if not dowhy_available():
         # graceful fallback: report that the built-in placebo test stands in
-        from cnsd.causal.estimators import placebo_test
+        from cansyd.causal.estimators import placebo_test
 
         p, ratio = placebo_test(condition, fault, None)
         return {

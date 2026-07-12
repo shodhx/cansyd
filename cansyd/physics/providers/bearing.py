@@ -5,8 +5,8 @@ shaft speed and measures their prominence in the envelope spectrum. This is the
 reference implementation of PhysicsProvider.
 """
 
-from cnsd.physics.bearing import fault_frequency_evidence
-from cnsd.physics.providers.base import PhysicsProvider
+from cansyd.physics.bearing import fault_frequency_evidence
+from cansyd.physics.providers.base import PhysicsProvider
 
 _ROOT_CAUSE = {
     'Outer Race': (

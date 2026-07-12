@@ -1,8 +1,8 @@
-"""Run CNSD on any vibration dataset - no bespoke loader, no prior knowledge."""
+"""Run CANSYD on any vibration dataset - no bespoke loader, no prior knowledge."""
 
 import numpy as np
 
-from cnsd import CNSD, Dataset, PhysicsConfig
+from cansyd import CANSYD, Dataset, PhysicsConfig
 
 # your arrays: signals, labels, operating condition per sample, sampling rate
 X = np.random.randn(300, 1024)
@@ -18,5 +18,5 @@ physics = PhysicsConfig(
 )
 
 data = Dataset.from_arrays(X, y, cond, fs=64000, physics=physics, name='my_rig')
-report = CNSD().fit(data).diagnose(data)
+report = CANSYD().fit(data).diagnose(data)
 print(report.summary())

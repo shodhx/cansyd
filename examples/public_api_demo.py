@@ -1,5 +1,5 @@
 """
-Demo: Using the new Public CNSD API Layer.
+Demo: Using the new Public CANSYD API Layer.
 
 This script demonstrates how to initialize the framework from a YAML config,
 and run diagnosis, causal analysis, and counterfactuals using the clean API.
@@ -7,7 +7,7 @@ and run diagnosis, causal analysis, and counterfactuals using the clean API.
 
 import numpy as np
 
-from cnsd import CNSD, Dataset
+from cansyd import CANSYD, Dataset
 
 # 1. Load data
 print('Loading dataset...')
@@ -18,8 +18,8 @@ cond = np.random.choice([0, 1, 2, 3], 200)
 data = Dataset.from_arrays(X, y, cond, fs=12000)
 
 # 2. Initialize the framework using the configuration
-print('Initializing CNSD Framework from config...')
-model = CNSD(config='cnsd_config.yaml')
+print('Initializing CANSYD Framework from config...')
+model = CANSYD(config='cansyd_config.yaml')
 
 # 3. Diagnosis API
 print('\n--- Running Diagnosis ---')

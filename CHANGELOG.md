@@ -1,6 +1,6 @@
 # Changelog (v1.0.0)
 
-All notable changes to CNSD are documented here. The format is based on
+All notable changes to CANSYD are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project
 adheres to semantic versioning once it reaches 1.0.
 
@@ -13,7 +13,7 @@ adheres to semantic versioning once it reaches 1.0.
   universal zero-knowledge fallback).
 - `GearProvider` and gear-mesh physics (GMF + sidebands) for gearbox diagnosis.
 - Configuration layer: YAML-driven physics and taxonomy, resolved into providers
-  by `cnsd/builder.py`.
+  by `cansyd/builder.py`.
 - **PR #19/20**: Integrated full 5-layer pipeline (CNN -> Symbolic -> Causal Sensitivity -> Causal Counterfactuals -> Consensus Router).
 - **PR #19/20**: Upgraded Rung-3 counterfactuals to use *continuous* vibration RMS outcomes instead of binary labels, enabling direction-sensible physical deltas.
 - Universal `Dataset` contract (`Dataset.from_arrays`) so any vibration dataset
@@ -36,7 +36,7 @@ adheres to semantic versioning once it reaches 1.0.
 
 ## History
 
-CNSD began as a five-layer causal-neuro-symbolic diagnosis prototype and was
+CANSYD began as a five-layer causal-neuro-symbolic diagnosis prototype and was
 rebuilt into a domain-agnostic framework: the physics-verification layer was made
 real (independent characteristic-frequency checks that can override the neural
 prediction), the causal claims were scoped honestly, and the system was

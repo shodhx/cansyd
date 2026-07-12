@@ -1,6 +1,6 @@
-# CNSD Architecture
+# CANSYD Architecture
 
-CNSD implements a full five-layer Causal Neuro-Symbolic Diagnosis pipeline.
+CANSYD implements a full five-layer Causal Neuro-Symbolic Diagnosis pipeline.
 
 ## The 5-Layer Pipeline
 

@@ -46,7 +46,7 @@ class TaxonomyConfig:
 
 
 @dataclass
-class CNSDConfig:
+class CANSYDConfig:
     schema_version: str
     dataset: DatasetConfig
     target: TargetConfig
@@ -61,15 +61,15 @@ class CNSDConfig:
             )
 
 
-def load_config(config_path: str | None = None) -> CNSDConfig:
+def load_config(config_path: str | None = None) -> CANSYDConfig:
     """
     Loads the generic configuration from a YAML file.
-    Can be overridden via the CNSD_CONFIG environment variable.
+    Can be overridden via the CANSYD_CONFIG environment variable.
     """
     if config_path is None:
-        # Default to the current working directory's cnsd_config.yaml,
+        # Default to the current working directory's cansyd_config.yaml,
         # or allow override via environment variable for CI/CD and deployment
-        config_path = os.getenv('CNSD_CONFIG', 'cnsd_config.yaml')
+        config_path = os.getenv('CANSYD_CONFIG', 'cansyd_config.yaml')
 
     if not os.path.exists(config_path):
         raise FileNotFoundError(f'Configuration file not found at {config_path}')
@@ -83,7 +83,7 @@ def load_config(config_path: str | None = None) -> CNSDConfig:
     if physics_raw is not None and 'parameters' in physics_raw:
         physics_obj = PhysicsConfigParameters(parameters=physics_raw['parameters'])
 
-    return CNSDConfig(
+    return CANSYDConfig(
         schema_version=str(raw_config.get('schema_version', '1.0')),
         dataset=DatasetConfig(**raw_config.get('dataset', {})),
         target=TargetConfig(**raw_config.get('target', {})),

@@ -18,7 +18,7 @@
 
 """
 
-CNSD_DAG = {
+CANSYD_DAG = {
     'nodes': {
         'H': 'latent bearing health state (unobserved)',
         'X': 'measured vibration signal / descriptor',
@@ -43,8 +43,8 @@ CNSD_DAG = {
 
 def describe():
     """Human-readable statement of the SCM (for reports / paper)."""
-    d = CNSD_DAG
-    lines = ['CNSD structural causal model:']
+    d = CANSYD_DAG
+    lines = ['CANSYD structural causal model:']
     for n, desc in d['nodes'].items():
         lines.append(f'  {n}: {desc}')
     lines.append('  edges: ' + ', '.join(f'{a}->{b}' for a, b in d['edges']))

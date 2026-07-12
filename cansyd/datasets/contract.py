@@ -1,5 +1,5 @@
 """
-The universal dataset contract for CNSD.
+The universal dataset contract for CANSYD.
 
 A dataset provides:
   X     : (n, window, 1) float array of per-segment-normalised signals
@@ -17,12 +17,12 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from cnsd.physics.configs import PhysicsConfig
+from cansyd.physics.configs import PhysicsConfig
 
 
 @dataclass
 class Dataset:
-    """The universal CNSD dataset object. Hold the data + the physics needed to
+    """The universal CANSYD dataset object. Hold the data + the physics needed to
     interpret it. The pipeline consumes ONLY this - never a dataset-specific API.
     """
 
@@ -53,7 +53,7 @@ class Dataset:
 
     @classmethod
     def from_arrays(cls, X, y, cond, fs, physics=None, taxonomy=None, name='custom'):
-        """Wrap arbitrary user arrays as a CNSD dataset. This is the entry point
+        """Wrap arbitrary user arrays as a CANSYD dataset. This is the entry point
         for ANY new vibration dataset - no bespoke loader required."""
         return cls(X=X, y=y, cond=cond, fs=fs, physics=physics, taxonomy=taxonomy, name=name)
 

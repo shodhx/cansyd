@@ -5,10 +5,10 @@ new machine class (gear, motor, pump, ...) is added by implementing
 PhysicsProvider and registering it - no engine change.
 """
 
-from cnsd.physics.providers.base import PhysicsProvider
-from cnsd.physics.providers.bearing import BearingProvider
-from cnsd.physics.providers.gear import GearProvider
-from cnsd.physics.providers.spectral import SpectralProvider
+from cansyd.physics.providers.base import PhysicsProvider
+from cansyd.physics.providers.bearing import BearingProvider
+from cansyd.physics.providers.gear import GearProvider
+from cansyd.physics.providers.spectral import SpectralProvider
 
 # domain.type (from config) -> provider builder. 'spectral' is the universal
 # zero-knowledge fallback used when a domain has no dedicated provider.

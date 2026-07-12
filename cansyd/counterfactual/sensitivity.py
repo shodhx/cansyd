@@ -11,7 +11,7 @@ output is a robustness diagnostic, not a counterfactual claim.
 
 import numpy as np
 
-from cnsd.causal.estimators import compute_vibration_rms
+from cansyd.causal.estimators import compute_vibration_rms
 
 
 def local_sensitivity(

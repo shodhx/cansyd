@@ -7,18 +7,18 @@ diagnosis, causal, refutation, SCM, and counterfactual reasoning engines.
 
 from typing import Any
 
-from cnsd.config import load_config
-from cnsd.diagnosis.system import CNSD as InternalEngine
+from cansyd.config import load_config
+from cansyd.diagnosis.system import CANSYD as InternalEngine
 
 
-class CNSD:
+class CANSYD:
     """
     Public Framework Entry Point.
 
     Initializes the end-to-end framework dynamically from a YAML configuration.
     """
 
-    def __init__(self, config: str = 'cnsd_config.yaml'):
+    def __init__(self, config: str = 'cansyd_config.yaml'):
         """
         Args:
             config: Path to the YAML configuration file defining the domain.

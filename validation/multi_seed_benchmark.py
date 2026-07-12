@@ -9,9 +9,9 @@ def main():
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
     import tensorflow as tf
 
-    from cnsd import Dataset
-    from cnsd.diagnosis.system import CNSD
-    from cnsd.perception.cnn import _train_cnn
+    from cansyd import Dataset
+    from cansyd.diagnosis.system import CANSYD
+    from cansyd.perception.cnn import _train_cnn
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, required=True, choices=['cwru', 'pu', 'xjtusy'])
@@ -20,7 +20,7 @@ def main():
     print(f'Loading {args.dataset.upper()} dataset...')
 
     if args.dataset == 'pu':
-        from cnsd.physics import PhysicsConfig
+        from cansyd.physics import PhysicsConfig
         from validation.validate_pu import load_pu_domain_split
 
         (X_train_full, y_train_full, cond_train_full), (X_target, y_target, cond_target) = (
@@ -61,7 +61,7 @@ def main():
         fs = 12000
 
     elif args.dataset == 'xjtusy':
-        from cnsd.datasets.xjtusy import load_xjtusy_domain_split
+        from cansyd.datasets.xjtusy import load_xjtusy_domain_split
 
         train_ds, target_ds = load_xjtusy_domain_split(window_size=4096)
 
@@ -172,7 +172,7 @@ def main():
         )
 
         # 2. Train Primary Model (Bypass SCM to prevent multiprocess deadlocks)
-        model = CNSD()
+        model = CANSYD()
         nc = int(train_ds.y.max()) + 1
         model.cnn = _train_cnn(train_ds.X, train_ds.y, num_classes=nc, epochs=20, seed=seed)
         model.symbolic = model._build_symbolic(train_ds)

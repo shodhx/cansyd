@@ -1,5 +1,5 @@
 """
-CNSD causal layer (Pearl Rung 2).
+CANSYD causal layer (Pearl Rung 2).
 
 The functions below estimate backdoor-adjusted associations between a physically
 grounded signal descriptor and the (binarised) fault label, controlling for

@@ -1,12 +1,12 @@
-"""Smoke tests for the CNSD layers (no TensorFlow / DoWhy required)."""
+"""Smoke tests for the CANSYD layers (no TensorFlow / DoWhy required)."""
 
 import numpy as np
 
-from cnsd.causal import intervention_effect_of_condition
-from cnsd.consensus import fuse
-from cnsd.physics import characteristic_frequencies
-from cnsd.physics.providers import BearingProvider, SpectralProvider, get_provider
-from cnsd.symbolic import PhysicsRuleEngine
+from cansyd.causal import intervention_effect_of_condition
+from cansyd.consensus import fuse
+from cansyd.physics import characteristic_frequencies
+from cansyd.physics.providers import BearingProvider, SpectralProvider, get_provider
+from cansyd.symbolic import PhysicsRuleEngine
 
 _BEARING = {'n_balls': 9, 'd_ball': 0.3126, 'd_pitch': 1.537, 'contact_angle': 0.0}
 _TAXONOMY = {0: ('Normal', 'None'), 5: ('Inner Race', 'Medium'), 8: ('Outer Race', 'Medium')}
@@ -78,7 +78,7 @@ def test_consensus_conflict_forces_review():
 
 
 def test_gear_mesh_frequency_math():
-    from cnsd.physics.gear import gear_mesh_frequencies
+    from cansyd.physics.gear import gear_mesh_frequencies
 
     gf = gear_mesh_frequencies(1800, 20)  # 20 teeth at 1800 rpm (30 Hz)
     assert abs(gf['GMF'] - 600.0) < 0.1
@@ -86,8 +86,8 @@ def test_gear_mesh_frequency_math():
 
 
 def test_gear_provider_implements_interface():
-    from cnsd.physics.providers.base import PhysicsProvider
-    from cnsd.physics.providers.gear import GearProvider
+    from cansyd.physics.providers.base import PhysicsProvider
+    from cansyd.physics.providers.gear import GearProvider
 
     p = GearProvider(n_teeth_input=20, cond_to_rpm={0: 1800}, fs=5120)
     assert isinstance(p, PhysicsProvider)
@@ -98,8 +98,8 @@ def test_gear_provider_implements_interface():
 
 
 def test_gear_registered():
-    from cnsd.physics.providers import available_domains, get_provider
-    from cnsd.physics.providers.gear import GearProvider
+    from cansyd.physics.providers import available_domains, get_provider
+    from cansyd.physics.providers.gear import GearProvider
 
     assert get_provider('gear') is GearProvider
     assert 'gear' in available_domains()

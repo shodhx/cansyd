@@ -4,9 +4,9 @@ import os
 import numpy as np
 import scipy.io as sio
 
-from cnsd import Dataset
-from cnsd.diagnosis.system import CNSD
-from cnsd.physics import PhysicsConfig
+from cansyd import Dataset
+from cansyd.diagnosis.system import CANSYD
+from cansyd.physics import PhysicsConfig
 
 
 def load_pu_domain_split(data_dir=None, window_size=8192):
@@ -16,7 +16,7 @@ def load_pu_domain_split(data_dir=None, window_size=8192):
     Test/Calib: N15 (1500 RPM)
     """
     if data_dir is None:
-        data_dir = os.environ.get('CNSD_DATA_PU', r'E:\301\PU-dataset')
+        data_dir = os.environ.get('CANSYD_DATA_PU', r'E:\301\PU-dataset')
     X_train, y_train, cond_train = [], [], []
     X_target, y_target, cond_target = [], [], []
 
@@ -164,7 +164,7 @@ if __name__ == '__main__':
         name='PU_Test',
     )
 
-    model = CNSD()
+    model = CANSYD()
 
     print('\n[1] Training Neural Network on 900 RPM Data...')
     model.fit(train_data, epochs=20)

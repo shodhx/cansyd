@@ -3,13 +3,13 @@
 # bring your own arrays (signals, labels, operating condition, sampling rate)
 import numpy as np
 
-from cnsd import CNSD, Dataset
+from cansyd import CANSYD, Dataset
 
 X = np.random.randn(200, 1024)
 y = np.random.randint(0, 10, 200)
 cond = np.random.choice([0, 1, 2, 3], 200)
 data = Dataset.from_arrays(X, y, cond, fs=12000)
-report = CNSD().fit(data).diagnose(data)
+report = CANSYD().fit(data).diagnose(data)
 
 print(report.summary())
 for statement in report.root_causes()[:5]:

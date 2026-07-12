@@ -3,13 +3,13 @@
 When no domain physics is configured, this provider verifies only that a
 dominant impulsive frequency is present in the envelope spectrum. It names no
 component (it has no machine model) but still gives the engine a physics-based
-CONFIRMED / INCONCLUSIVE signal, so CNSD runs on any signal from any machine.
+CONFIRMED / INCONCLUSIVE signal, so CANSYD runs on any signal from any machine.
 """
 
 import numpy as np
 
-from cnsd.physics.bearing import envelope_spectrum
-from cnsd.physics.providers.base import PhysicsProvider
+from cansyd.physics.bearing import envelope_spectrum
+from cansyd.physics.providers.base import PhysicsProvider
 
 
 class SpectralProvider(PhysicsProvider):

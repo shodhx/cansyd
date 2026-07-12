@@ -1,12 +1,12 @@
 """Config -> resolved objects bridge.
 
-The single point where a CNSDConfig (from YAML) is turned into the objects the
+The single point where a CANSYDConfig (from YAML) is turned into the objects the
 engine consumes: a PhysicsProvider and a taxonomy. The engine never reads the
 config; it only ever sees these resolved objects. Adding a domain means
 registering a provider and a geometry resolver here - no engine change.
 """
 
-from cnsd.physics.providers import SpectralProvider, get_provider
+from cansyd.physics.providers import SpectralProvider, get_provider
 
 # Named bearing geometries, so a config can say bearing_type: "6205-2RS" instead
 # of spelling out the geometry. Extend freely; unknown names fall back to

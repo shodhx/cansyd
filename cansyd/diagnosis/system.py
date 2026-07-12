@@ -1,27 +1,27 @@
 """
-CNSD's front door.
+CANSYD's front door.
 
-CNSD's whole five-layer pipeline is behind
+CANSYD's whole five-layer pipeline is behind
 one object:
 
-    from cnsd import CNSD, Dataset
+    from cansyd import CANSYD, Dataset
     data   = Dataset.from_arrays(signals, labels, condition, fs=12000)
-    model  = CNSD().fit(data)
+    model  = CANSYD().fit(data)
     report = model.diagnose(data)
 
 Layers: perception (1) -> symbolic verification + root cause (2) -> causal
 Rung-2 (3) -> counterfactual Rung-3 (3B) -> consensus (4).
 """
 
-from cnsd.causal import compute_vibration_rms, intervention_effect_of_condition, signal_kurtosis
-from cnsd.consensus import fuse
-from cnsd.counterfactual import build_scm, what_if
-from cnsd.datasets import Dataset
-from cnsd.diagnosis.report import DiagnosisReport
-from cnsd.symbolic import PhysicsRuleEngine
+from cansyd.causal import compute_vibration_rms, intervention_effect_of_condition, signal_kurtosis
+from cansyd.consensus import fuse
+from cansyd.counterfactual import build_scm, what_if
+from cansyd.datasets import Dataset
+from cansyd.diagnosis.report import DiagnosisReport
+from cansyd.symbolic import PhysicsRuleEngine
 
 
-class CNSD:
+class CANSYD:
     """Five-layer Causal Neuro-Symbolic Diagnosis system."""
 
     def __init__(self, conf_thresh=0.90, prominence_threshold=3.0, config=None):
@@ -34,7 +34,7 @@ class CNSD:
         self._fitted = False
 
     def fit(self, data: Dataset, epochs=30):
-        from cnsd.perception.cnn import _train_cnn
+        from cansyd.perception.cnn import _train_cnn
 
         nc = int(data.y.max()) + 1
         self.cnn = _train_cnn(data.X, data.y, num_classes=nc, epochs=epochs)
@@ -49,10 +49,10 @@ class CNSD:
     def _build_symbolic(self, data):
         """Resolve the physics provider + taxonomy: config first, else the
         dataset's attached physics, else the universal spectral fallback."""
-        from cnsd.physics.providers import BearingProvider, SpectralProvider
+        from cansyd.physics.providers import BearingProvider, SpectralProvider
 
         if self.config is not None:
-            from cnsd.builder import build_provider, build_taxonomy
+            from cansyd.builder import build_provider, build_taxonomy
 
             return PhysicsRuleEngine(
                 provider=build_provider(self.config),

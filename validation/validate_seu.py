@@ -1,9 +1,9 @@
 """
-validate_seu.py - cross-domain validation: run the full CNSD pipeline on the SEU
+validate_seu.py - cross-domain validation: run the full CANSYD pipeline on the SEU
 gearbox dataset (a NON-bearing domain) using the GearProvider.
 
 This is the universality test: the same five-layer pipeline, the same engine, a
-different machine class - only the physics provider changes. If CNSD diagnoses
+different machine class - only the physics provider changes. If CANSYD diagnoses
 gear faults via gear-mesh physics, that demonstrates the provider interface is
 genuinely domain-agnostic, not bearing-bound.
 
@@ -17,10 +17,10 @@ import os
 
 import numpy as np
 
-from cnsd import Dataset
-from cnsd.diagnosis.system import CNSD
-from cnsd.physics.configs import PhysicsConfig
-from cnsd.physics.providers.gear import GearProvider
+from cansyd import Dataset
+from cansyd.diagnosis.system import CANSYD
+from cansyd.physics.configs import PhysicsConfig
+from cansyd.physics.providers.gear import GearProvider
 
 # ── SEU gearbox parameters ───────────────────────────────────────────────────
 # Replace N_TEETH_INPUT with the actual driving-gear tooth count of the SEU rig.
@@ -52,7 +52,7 @@ def load_seu():
     containing 'Data' (~line 16), data starts the next line. Pick one channel
     (pre-commit to it before seeing results - no channel cherry-picking).
     """
-    base_dir = os.environ.get('CNSD_DATA_SEU', r'E:\301\SEU-dataset\gearbox\gearset')
+    base_dir = os.environ.get('CANSYD_DATA_SEU', r'E:\301\SEU-dataset\gearbox\gearset')
 
     label_map = {'Health': 0, 'Chipped': 1, 'Miss': 2, 'Root': 3, 'Surface': 4}
     X_list, y_list, cond_list = [], [], []
@@ -119,7 +119,7 @@ def headline_by_verdict(report, y_true):
 
 def main():
     print('=' * 68)
-    print('CNSD CROSS-DOMAIN VALIDATION - SEU GEARBOX (GearProvider)')
+    print('CANSYD CROSS-DOMAIN VALIDATION - SEU GEARBOX (GearProvider)')
     print('=' * 68)
 
     X, y, cond = load_seu()
@@ -144,9 +144,9 @@ def main():
         f'[data] train {len(train.X)}  test {len(test.X)}  classes={sorted(np.unique(y).tolist())}'
     )
 
-    # CNSD with the gear provider explicitly (config path also works via
+    # CANSYD with the gear provider explicitly (config path also works via
     # domain.type: gear once you add a YAML)
-    model = CNSD()
+    model = CANSYD()
     model.fit(train, epochs=30)
     # override the symbolic layer with the gear provider for this domain
     model.symbolic.provider = GearProvider(

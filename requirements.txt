@@ -1,4 +1,4 @@
-# CNSD - full pipeline dependencies (validated environment)
+# CANSYD - full pipeline dependencies (validated environment)
 
 # core (framework: causal, physics, symbolic, consensus, config)
 numpy==2.4.4

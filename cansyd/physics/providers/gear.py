@@ -7,8 +7,8 @@ distributed surface wear raises the mesh harmonics. The SEU gearbox taxonomy
 (Health, Chipped, Miss, Root, Surface) maps onto these two evidence channels.
 """
 
-from cnsd.physics.gear import gear_fault_evidence
-from cnsd.physics.providers.base import PhysicsProvider
+from cansyd.physics.gear import gear_fault_evidence
+from cansyd.physics.providers.base import PhysicsProvider
 
 # SEU gearbox fault families -> which evidence channel signifies them.
 # 'localized' faults show shaft-rate sidebands; 'distributed' wear shows mesh.

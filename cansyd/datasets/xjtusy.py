@@ -4,11 +4,11 @@ import os
 import numpy as np
 import pandas as pd
 
-from cnsd.datasets.contract import Dataset
-from cnsd.physics.configs import XJTUSY_PHYSICS
+from cansyd.datasets.contract import Dataset
+from cansyd.physics.configs import XJTUSY_PHYSICS
 
 # Known fault mappings per XJTU-SY paper
-# We map Bearing ID to CNSD fault class: 1=Outer, 2=Inner, 3=Cage
+# We map Bearing ID to CANSYD fault class: 1=Outer, 2=Inner, 3=Cage
 XJTUSY_FAULTS = {
     '35Hz12kN': {
         'Bearing1_1': 1,  # Outer
@@ -32,7 +32,7 @@ XJTUSY_FAULTS = {
 
 
 def load_xjtusy_domain_split(
-    data_dir=r'E:\301\CNSD\data\XJTU-SY\XJTU-SY_Bearing_Datasets',
+    data_dir=r'E:\301\CANSYD\data\XJTU-SY\XJTU-SY_Bearing_Datasets',
     window_size=32768,
     train_cond='35Hz12kN',
     test_cond='37.5Hz11kN',

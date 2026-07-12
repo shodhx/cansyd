@@ -13,15 +13,15 @@ extras = {
 extras['all'] = extras['perception'] + extras['counterfactual']
 
 setup(
-    name='cnsd',
+    name='cansyd',
     version='1.0.0',
     description='Causal Neuro-Symbolic Diagnosis - a five-layer fault-diagnosis framework',
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='Abhimanyu Prasad, Kazi Tasfin Mahmud',
-    url='https://github.com/abhiprd2000/CNSD',
+    url='https://github.com/shodhx/cansyd',
     license='MIT',
-    packages=find_packages(include=['cnsd', 'cnsd.*']),
+    packages=find_packages(include=['cansyd', 'cansyd.*']),
     python_requires='>=3.11',
     install_requires=['numpy>=2.0', 'scipy>=1.11', 'scikit-learn>=1.4', 'pyyaml>=6.0'],
     extras_require=extras,

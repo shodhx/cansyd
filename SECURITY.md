@@ -1,6 +1,6 @@
 # Security Policy
 
-CNSD is a research framework for machine fault diagnosis. It is not intended for
+CANSYD is a research framework for machine fault diagnosis. It is not intended for
 safety-critical deployment without independent validation (see the limitations
 in the README).
 
@@ -25,6 +25,6 @@ commit on `main` is supported; fixes are not backported.
 
 ## Scope
 
-CNSD loads user-supplied data and configuration (including YAML). Treat data and
+CANSYD loads user-supplied data and configuration (including YAML). Treat data and
 config files from untrusted sources with the same caution as any code — a
 configuration file can change which physics and taxonomy the system applies.
