@@ -30,9 +30,7 @@ setup(
     python_requires='>=3.11',
     install_requires=['numpy>=2.0', 'scipy>=1.11', 'scikit-learn>=1.4', 'pyyaml>=6.0'],
     extras_require=extras,
-)
-
-keywords='bearing fault diagnosis, causal inference, neuro-symbolic, physics-informed, condition monitoring, PHM',
+    keywords='bearing fault diagnosis, causal inference, neuro-symbolic, physics-informed, condition monitoring, PHM',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Science/Research',
@@ -46,3 +44,4 @@ keywords='bearing fault diagnosis, causal inference, neuro-symbolic, physics-inf
         'Issues': 'https://github.com/shodhx/cansyd/issues',
         'Changelog': 'https://github.com/shodhx/cansyd/blob/main/CHANGELOG.md',
     },
+)
