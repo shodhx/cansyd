@@ -7,8 +7,7 @@ long_description = (
 )
 
 long_description = long_description.replace(
-    'docs/assets/',
-    'https://raw.githubusercontent.com/shodhx/cansyd/main/docs/assets/'
+    'docs/assets/', 'https://raw.githubusercontent.com/shodhx/cansyd/main/docs/assets/'
 )
 
 extras = {
