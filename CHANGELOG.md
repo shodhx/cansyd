@@ -34,6 +34,10 @@ adheres to semantic versioning once it reaches 1.0.
 - Interfaces may change. Not intended for
   safety-critical deployment without independent validation.
 
+- First release-grade implementation, consolidating the earlier CNSD research
+  prototype and exploratory notebooks (to be released separately) into a tested,
+  installable framework.
+  
 ## History
 
 CANSYD began as a five-layer causal-neuro-symbolic diagnosis prototype and was
