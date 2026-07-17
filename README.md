@@ -45,7 +45,8 @@ CANSYD is the consolidated, tested implementation of a line of prior work by the
 authors: an earlier CNSD research prototype and a set of exploratory notebooks
 developing the physics-verification and causal layers. Those materials are being
 prepared for public release and will be linked here. This repository is the
-release-grade framework built from that research.
+release-grade framework built from that research. The notebooks will be uploaded soon here
+and the prototype repository.
 
 ## Table of Contents
 
