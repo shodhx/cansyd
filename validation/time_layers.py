@@ -12,16 +12,17 @@ Usage:
 Hardware should be reported in the paper caption alongside these results.
 """
 
-import time
 import platform
+import time
+
 import numpy as np
 
 # ── Configuration ───────────────────────────────────────────────────────────
-L = 2048            # window length (matches Table VII)
-N_ITER = 1000       # iterations per layer
-FS = 12000          # Hz (CWRU sampling rate)
-RPM = 1797          # CWRU drive-end shaft speed
-N_WARMUP = 50       # warmup iterations (excluded from timing)
+L = 2048  # window length (matches Table VII)
+N_ITER = 1000  # iterations per layer
+FS = 12000  # Hz (CWRU sampling rate)
+RPM = 1797  # CWRU drive-end shaft speed
+N_WARMUP = 50  # warmup iterations (excluded from timing)
 
 np.random.seed(42)
 
@@ -63,11 +64,14 @@ def time_function(func, n_iter=N_ITER, n_warmup=N_WARMUP):
 def time_cnn():
     try:
         import os
+
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
         import tensorflow as tf
+
         tf.config.set_visible_devices([], 'GPU')  # force CPU
 
         from cansyd.perception.cnn import build_cnn
+
         model = build_cnn(input_shape=(L, 1), num_classes=10)
         x = signal.reshape(1, L, 1)
 
@@ -85,10 +89,10 @@ def time_cnn():
         times = np.array(times)
         return float(times.mean()), float(times.std())
     except ImportError:
-        print("  [SKIP] TensorFlow not installed — CNN timing unavailable")
+        print('  [SKIP] TensorFlow not installed — CNN timing unavailable')
         return None, None
     except Exception as e:
-        print(f"  [SKIP] CNN timing failed: {e}")
+        print(f'  [SKIP] CNN timing failed: {e}')
         return None, None
 
 
@@ -113,10 +117,7 @@ def time_causal():
     treatment = signal_kurtosis(signals_batch)
 
     def run():
-        analyze_causal(
-            treatment, labels_batch, conditions_batch,
-            domain='timing_benchmark'
-        )
+        analyze_causal(treatment, labels_batch, conditions_batch, domain='timing_benchmark')
 
     # Causal layer uses 1000 permutations internally — time for 1 call
     # and report as per-batch (divide by N_BATCH for per-sample)
@@ -161,60 +162,60 @@ def time_consensus():
 #  Main
 # ============================================================================
 if __name__ == '__main__':
-    print("=" * 65)
-    print("CANSYD Per-Layer Inference Timing Benchmark")
-    print("=" * 65)
-    print(f"  Window length (L):  {L}")
-    print(f"  Iterations:         {N_ITER}")
-    print(f"  Warmup:             {N_WARMUP}")
-    print(f"  Platform:           {platform.processor()}")
-    print(f"  Python:             {platform.python_version()}")
-    print(f"  CPU:                {platform.machine()}")
+    print('=' * 65)
+    print('CANSYD Per-Layer Inference Timing Benchmark')
+    print('=' * 65)
+    print(f'  Window length (L):  {L}')
+    print(f'  Iterations:         {N_ITER}')
+    print(f'  Warmup:             {N_WARMUP}')
+    print(f'  Platform:           {platform.processor()}')
+    print(f'  Python:             {platform.python_version()}')
+    print(f'  CPU:                {platform.machine()}')
     print()
 
     results = {}
 
-    print("[1/5] CNN (1D-Conv + softmax)...")
+    print('[1/5] CNN (1D-Conv + softmax)...')
     m, s = time_cnn()
     if m is not None:
         results['1. CNN (1D-Conv + softmax)'] = (m, s)
-        print(f"       {m:.2f} ± {s:.2f} ms")
+        print(f'       {m:.2f} ± {s:.2f} ms')
 
-    print("[2/5] Physics (FFT + envelope)...")
+    print('[2/5] Physics (FFT + envelope)...')
     m, s = time_physics()
     results['2. Physics (FFT + envelope)'] = (m, s)
-    print(f"       {m:.2f} ± {s:.2f} ms")
+    print(f'       {m:.2f} ± {s:.2f} ms')
 
-    print("[3/5] Causal (ATE + permutation)...")
+    print('[3/5] Causal (ATE + permutation)...')
     m, s = time_causal()
     results['3a. Causal (ATE + permutation)'] = (m, s)
-    print(f"       {m:.2f} ± {s:.2f} ms/sample")
+    print(f'       {m:.2f} ± {s:.2f} ms/sample')
 
-    print("[4/5] Counterfactual (sensitivity)...")
+    print('[4/5] Counterfactual (sensitivity)...')
     m, s = time_counterfactual()
     results['3b. Counterfactual (abduction)'] = (m, s)
-    print(f"       {m:.2f} ± {s:.2f} ms")
+    print(f'       {m:.2f} ± {s:.2f} ms')
 
-    print("[5/5] Consensus router...")
+    print('[5/5] Consensus router...')
     m, s = time_consensus()
     results['4. Consensus router'] = (m, s)
-    print(f"       {m:.4f} ± {s:.4f} ms")
+    print(f'       {m:.4f} ± {s:.4f} ms')
 
     # ── Summary Table ───────────────────────────────────────────────────────
     print()
-    print("=" * 65)
-    print("RESULTS (for Table VII)")
-    print("=" * 65)
-    print(f"{'Layer':<35} {'Time (ms)':>12} {'± std':>10}")
-    print("-" * 60)
+    print('=' * 65)
+    print('RESULTS (for Table VII)')
+    print('=' * 65)
+    print(f'{"Layer":<35} {"Time (ms)":>12} {"± std":>10}')
+    print('-' * 60)
 
     total_mean = 0.0
     for layer, (m, s) in results.items():
-        print(f"  {layer:<33} {m:>10.2f}   ±{s:>7.2f}")
+        print(f'  {layer:<33} {m:>10.2f}   ±{s:>7.2f}')
         total_mean += m
 
-    print("-" * 60)
-    print(f"  {'TOTAL':<33} {total_mean:>10.2f}")
+    print('-' * 60)
+    print(f'  {"TOTAL":<33} {total_mean:>10.2f}')
     print()
-    print("Copy these values into Table VII of main.tex.")
-    print("Report hardware in the table caption.")
+    print('Copy these values into Table VII of main.tex.')
+    print('Report hardware in the table caption.')
