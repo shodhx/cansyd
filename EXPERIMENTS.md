@@ -219,3 +219,28 @@ command:  python -m validation.generate_tables
 | XJTU-SY | -0.0157 | [-0.0303, -0.0017] | 0.0240 | Negative ATE; similar conservatism to PU. |
 
 ---
+
+## 7. Computational Cost (Inference Timing)
+
+* **Status:** validated
+* **Purpose:** Measure the per-sample inference time of each CANSYD layer to verify computational overhead.
+* **Setup:** Single CPU core (AMD Ryzen 7 5700G), L=2048 window, 1000 iterations, 50 warmup passes.
+
+**Run record**
+```text
+command:  python -m validation.time_layers
+```
+
+**Results (per-sample latency)**
+| Layer | Time (ms) ± std | % of Total |
+|-------|-----------------|------------|
+| 1. CNN (1D-Conv + softmax) | 52.86 ± 7.96 | 98.6% |
+| 2. Physics (FFT + envelope) | 0.36 ± 0.05 | 0.7% |
+| 3a. Causal (ATE + permutation) | 0.39 ± 0.01 | 0.7% |
+| 3b. Counterfactual (sensitivity) | <0.01 | <0.1% |
+| 4. Consensus router | <0.01 | <0.1% |
+| **TOTAL** | **53.62** | **100.0%** |
+
+**Reading.** The CNN forward pass completely dominates the computational budget. The physics, causal, and counterfactual layers combined add less than 2% overhead. The total latency (~54 ms) is well within the 1 Hz monitoring budget for SCADA systems.
+
+---
